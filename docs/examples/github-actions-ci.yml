@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - name: Install
+        run: python -m pip install -e '.[test]'
+      - name: Test
+        run: python -m pytest -q
+      - name: Check public release
+        run: python scripts/check_public_release.py
+
+  browser-extension:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Unit tests
+        run: >-
+          node --test
+          browser_extension/auth-utils.test.js
+          browser_extension/journey-utils.test.js
+          browser_extension/permission-utils.test.js
+      - name: Syntax checks
+        run: |
+          node --check browser_extension/service-worker.js
+          node --check browser_extension/panel.js
+          node --check browser_extension/content.js
+          node --check browser_extension/auth-content.js
+          node --check browser_extension/journey-content.js
+          node --check browser_extension/submit-content.js
+          node --check src/resume_campaign_agent/static/app.js

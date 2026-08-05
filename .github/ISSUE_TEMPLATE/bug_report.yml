@@ -1,0 +1,56 @@
+name: Bug report
+description: 报告可复现的缺陷；请只使用合成数据
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: 请勿提交真实简历、API Key、Cookie、验证码、服务器地址或未公开的安全漏洞。
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      placeholder: app 0.2.0 / extension 0.6.0
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - API / Pydantic AI
+        - Web UI
+        - Browser extension
+        - Job discovery
+        - Deployment
+        - Documentation
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Synthetic reproduction
+      description: 使用合成资料描述最小复现步骤。
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety confirmation
+      options:
+        - label: 我已删除个人信息、凭据、验证码、Cookie、主机地址和真实招聘账号信息。
+          required: true
+        - label: 此报告不包含未公开的安全漏洞；安全问题将通过 Security Advisory 私下报告。
+          required: true

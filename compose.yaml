@@ -1,0 +1,29 @@
+services:
+  resume-agent:
+    build:
+      context: .
+    image: resume-campaign-agent:0.2.0
+    restart: unless-stopped
+    env_file:
+      - path: .env.server
+        required: false
+    environment:
+      AGENT_HOST: 0.0.0.0
+      AGENT_PORT: 18010
+    ports:
+      - "127.0.0.1:${AGENT_PORT:-18010}:18010"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import json,urllib.request; assert json.load(urllib.request.urlopen('http://127.0.0.1:18010/api/health', timeout=3))['ok']"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    security_opt:
+      - no-new-privileges:true

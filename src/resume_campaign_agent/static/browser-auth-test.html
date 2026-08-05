@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>星河实业招聘账号登录｜认证接力演练</title>
+  <style>
+    :root { --paper:#f5efdf; --ink:#222823; --green:#294d3d; --amber:#bd7625; --red:#963e34; --line:#c8bda5; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; display:grid; place-items:center; color:var(--ink); background:#d6ceba; font:15px/1.5 Inter,"Noto Sans SC",system-ui,sans-serif; }
+    main { width:min(460px,calc(100% - 30px)); padding:34px; background:var(--paper); border:1px solid #ab9f85; box-shadow:12px 14px 0 #58514425; }
+    header { display:flex; justify-content:space-between; gap:20px; padding-bottom:16px; border-bottom:2px solid var(--green); }
+    small { color:#6f6a5e; font:700 10px ui-monospace,monospace; letter-spacing:.14em; } h1 { margin:4px 0 0; font:700 25px Georgia,"Noto Serif SC",serif; }
+    .seal { align-self:flex-start; padding:4px 7px; color:var(--red); border:2px solid; font-weight:800; transform:rotate(2deg); }
+    .notice { margin:18px 0; padding:11px 12px; background:#eee2c9; border-left:4px solid var(--amber); font-size:13px; }
+    form { display:grid; gap:8px; } label { margin-top:9px; font-weight:750; }
+    input { width:100%; padding:12px; color:var(--ink); background:#fffdf6; border:1px solid var(--line); font:15px system-ui,sans-serif; }
+    .code-row { display:grid; grid-template-columns:1fr 130px; gap:8px; } button { padding:12px; color:#fff; background:var(--green); border:0; font-weight:800; cursor:pointer; } button:disabled { opacity:.45; cursor:not-allowed; }
+    .consent { display:flex; gap:8px; align-items:flex-start; margin:11px 0; font-weight:500; font-size:13px; }.consent input { width:auto; margin-top:4px; }
+    a { color:var(--green); }.mock-code { min-height:22px; margin:4px 0 0; color:var(--red); font-weight:750; }
+    footer { margin-top:17px; color:#6f6a5e; font-size:12px; }
+  </style>
+</head>
+<body>
+  <main>
+    <header><div><small>OFFICIAL CAREERS · LOCAL MOCK</small><h1>招聘账号登录</h1></div><span class="seal">不发短信</span></header>
+    <p class="notice">本机演练页不会联网。未注册手机号将自动创建招聘账号；演练验证码固定为 <strong>246810</strong>。</p>
+    <form id="auth-form" autocomplete="off">
+      <label for="mobile">手机号码</label>
+      <input id="mobile" name="mobile" type="tel" autocomplete="tel" placeholder="请输入手机号" required />
+      <label for="sms-code">短信验证码</label>
+      <div class="code-row">
+        <input id="sms-code" name="sms_otp" inputmode="numeric" autocomplete="one-time-code" placeholder="6 位验证码" required />
+        <button id="get-code" type="button">获取验证码</button>
+      </div>
+      <p id="mock-code" class="mock-code" aria-live="polite"></p>
+      <label class="consent"><input id="privacy" name="privacy_consent" type="checkbox" />我已阅读并同意<a href="#privacy-note">隐私政策与招聘账号协议</a></label>
+      <button id="login-button" type="button" disabled>登录 / 创建账号并继续</button>
+    </form>
+    <footer id="privacy-note">安全演练：正确验证码和明确授权后进入模拟申请页；最终提交只写入本机回执。</footer>
+  </main>
+  <script>
+    const phone = document.querySelector('#mobile');
+    const otp = document.querySelector('#sms-code');
+    const consent = document.querySelector('#privacy');
+    const login = document.querySelector('#login-button');
+    const codeNotice = document.querySelector('#mock-code');
+    function refresh() {
+      login.disabled = !(phone.value.trim() && otp.value.trim() && consent.checked);
+    }
+    document.querySelector('#get-code').addEventListener('click', () => {
+      if (!/^\+?[0-9][0-9\s-]{5,19}$/.test(phone.value.trim())) {
+        codeNotice.textContent = '请先填写有效手机号。';
+        return;
+      }
+      codeNotice.textContent = '演练验证码：246810（仅本机显示，没有发送短信）';
+    });
+    [phone, otp].forEach((input) => input.addEventListener('input', refresh));
+    consent.addEventListener('change', refresh);
+    login.addEventListener('click', () => {
+      if (otp.value.trim() !== '246810') {
+        codeNotice.textContent = '演练验证码不正确，请重新填写。';
+        return;
+      }
+      location.assign('/browser-auth-complete');
+    });
+  </script>
+</body>
+</html>

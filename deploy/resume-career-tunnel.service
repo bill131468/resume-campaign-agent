@@ -1,0 +1,25 @@
+[Unit]
+Description=Resume Career OS temporary HTTPS tunnel
+After=network-online.target resume-campaign-agent.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=resumeagent
+Group=resumeagent
+WorkingDirectory=/opt/resume-campaign-agent
+ExecStart=/usr/local/bin/cloudflared tunnel --no-autoupdate --protocol http2 --loglevel info --url http://127.0.0.1:18010
+Restart=always
+RestartSec=5
+TimeoutStopSec=15
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target

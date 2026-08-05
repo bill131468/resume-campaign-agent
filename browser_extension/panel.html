@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>简历投递副驾驶</title>
+  <link rel="stylesheet" href="panel.css" />
+</head>
+<body>
+  <header class="masthead">
+    <div><span class="eyebrow">LOCAL FORM COPILOT</span><h1>简历投递副驾驶</h1></div>
+    <span class="seal">不提交</span>
+  </header>
+
+  <main>
+    <section class="status-strip" aria-live="polite">
+      <span id="agent-dot" class="dot"></span>
+      <div><strong id="agent-status">正在连接本机 Agent</strong><small id="agent-detail">127.0.0.1:18010</small></div>
+    </section>
+
+    <section class="sheet">
+      <div class="section-number">01</div>
+      <div class="section-body">
+        <label for="session-select">使用哪份简历</label>
+        <select id="session-select"><option value="">正在读取会话…</option></select>
+        <p id="session-meta" class="hint">简历明文不会写入插件存储。</p>
+      </div>
+    </section>
+
+    <section class="sheet">
+      <div class="section-number">02</div>
+      <div class="section-body">
+        <div class="permission-head">
+          <div><strong>浏览器权限</strong><p id="site-origin" class="hint">正在检查当前站点…</p></div>
+          <span id="permission-badge" class="badge neutral">检查中</span>
+        </div>
+        <div class="permission-ledger">
+          <span><i class="ledger-dot fixed"></i>本机 Agent：固定授权</span>
+          <span><i id="site-dot" class="ledger-dot"></i><b id="site-access-label">当前页：临时访问</b></span>
+        </div>
+        <button id="grant-site-button" class="secondary">仅授权当前招聘网站</button>
+        <button id="revoke-site-button" class="link-button" hidden>撤销当前网站持续权限</button>
+        <p class="hint">授权后可跨该网站的职位页持续工作；不会获得其他网站权限。</p>
+      </div>
+    </section>
+
+    <section class="sheet">
+      <div class="section-number">03</div>
+      <div class="section-body">
+        <div class="row"><div><strong>扫描当前招聘页</strong><p class="hint">只读取字段标签与选项，不读取现有内容。</p></div><label class="ai-toggle"><input id="use-ai" type="checkbox" checked /> AI 识别</label></div>
+        <button id="scan-button" class="primary">扫描并生成预检单</button>
+        <button id="mock-button" class="link-button">打开本机全流程招聘演练</button>
+      </div>
+    </section>
+
+    <section class="sheet auth-entry">
+      <div class="section-number">04</div>
+      <div class="section-body">
+        <div class="row"><div><strong>AI 接管状态</strong><p id="takeover-status" class="hint">请在投递作战夹的企业卡片上点击“AI 核岗 · 接管官网”。</p></div><span id="takeover-badge" class="badge neutral">等待任务</span></div>
+      </div>
+    </section>
+
+    <section id="plan-section" class="plan" hidden>
+      <div class="plan-head"><div><span class="eyebrow">FILL PREVIEW</span><h2>填表预检清单</h2></div><span id="ai-badge" class="badge">规则</span></div>
+      <div class="metrics"><div><strong id="fill-count">0</strong><span>建议填入</span></div><div><strong id="skip-count">0</strong><span>安全跳过</span></div></div>
+      <div id="action-list" class="action-list"></div>
+      <details><summary>查看跳过项</summary><div id="skip-list" class="skip-list"></div></details>
+      <p class="boundary">AI 会先核验同源在招岗位；普通填表不会操作证件信息或人口统计项。验证码只能由你在“认证接力”中手动输入，最终提交必须逐岗位明确授权。</p>
+      <button id="highlight-button" class="secondary">先在页面标记待填字段</button>
+      <button id="fill-button" class="primary ink">填入当前页的空白字段</button>
+    </section>
+
+    <p id="message" class="message" aria-live="polite"></p>
+  </main>
+
+  <dialog id="auth-dialog" aria-labelledby="auth-title">
+    <form method="dialog" class="auth-receipt">
+      <div class="receipt-head">
+        <div><span class="eyebrow">AI APPLICATION HANDOFF</span><h2 id="auth-title">AI 投递接力</h2></div>
+        <button id="auth-close-button" class="icon-button" value="cancel" aria-label="关闭认证接力">×</button>
+      </div>
+      <ol class="auth-steps" aria-label="认证步骤">
+        <li id="auth-step-phone" class="active">1 官网接管</li>
+        <li id="auth-step-code">2 验证码</li>
+        <li id="auth-step-continue">3 自动投递</li>
+      </ol>
+      <p id="auth-origin" class="origin-slip"></p>
+      <p id="auth-account-warning" class="boundary" hidden>该招聘网站提示：未注册手机号可能会创建招聘账号。继续即表示你确认该结果。</p>
+      <div id="auth-otp-stage">
+        <label class="auth-field" for="auth-otp">短信验证码</label>
+        <input id="auth-otp" inputmode="numeric" autocomplete="one-time-code" placeholder="收到后由你手动填写" disabled />
+      </div>
+      <label id="auth-consent-row" class="consent-approval" hidden>
+        <input id="auth-consent-approval" type="checkbox" />
+        <span>我授权副驾驶仅为本次登录勾选招聘网站的隐私/用户协议同意项。<a id="auth-policy-link" href="#" target="_blank" rel="noreferrer" hidden>查看原文</a></span>
+      </label>
+      <label id="auth-submit-row" class="consent-approval submit-approval" hidden>
+        <input id="auth-submit-approval" type="checkbox" />
+        <span id="auth-submit-copy">我确认由 AI 为本岗位填写官网申请表，并在没有缺失字段、人工声明或人机验证时点击最终提交。</span>
+      </label>
+      <p id="auth-dialog-message" class="message" aria-live="polite"></p>
+      <button id="complete-auth-button" class="primary ink" type="button" disabled>登录 / 创建招聘账号并继续</button>
+      <p class="hard-stop">硬边界：不读取短信、不破解人机验证；必填字段、附件或人工声明不完整时不会提交。</p>
+    </form>
+  </dialog>
+  <script src="permission-utils.js"></script>
+  <script src="panel.js"></script>
+</body>
+</html>

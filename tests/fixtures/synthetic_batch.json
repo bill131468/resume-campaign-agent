@@ -1,0 +1,58 @@
+{
+  "synthetic_fixture": true,
+  "limit_per_case": 7,
+  "cases": [
+    {
+      "label": "合成样本 A · AI 应用应届档案",
+      "resume": {
+        "full_name": "林澄（合成示例）",
+        "email": "lin.cheng.demo@example.com",
+        "phone": "+86 188 0000 0000",
+        "city": "杭州",
+        "target_roles": ["Python Engineer", "AI Application Engineer"],
+        "years_experience": 1.5,
+        "skills": ["Python", "FastAPI", "Pydantic", "Docker", "PostgreSQL", "LLM"],
+        "summary": "专注人工智能应用与 Python 后端开发，完成过结构化 Agent、检索服务和容器化部署等合成项目实践。所有内容仅用于产品测试。",
+        "education": [{"school": "东岸理工大学（虚构）", "degree": "本科", "major": "计算机科学与技术", "graduation_year": 2024}],
+        "work_experience": [{
+          "company": "纸飞机智能实验室（虚构）",
+          "title": "AI 应用开发助理",
+          "start_date": "2024-07-01",
+          "end_date": "2026-01-31",
+          "highlights": ["搭建结构化输出的 Agent 原型", "为演示服务补充 API 测试与容器化配置"]
+        }]
+      },
+      "preferred_locations": ["Berlin", "Remote"],
+      "remote_preference": "preferred"
+    },
+    {
+      "label": "合成样本 B · 故意缺字段",
+      "resume": {"target_roles": ["Data Analyst"], "years_experience": 0, "skills": ["Python", "SQL"]},
+      "preferred_locations": ["Remote"],
+      "remote_preference": "preferred"
+    },
+    {
+      "label": "合成样本 C · 资深数据工程师",
+      "resume": {
+        "full_name": "周岚（合成示例）",
+        "email": "zhou.lan.demo@example.com",
+        "phone": "+86 177 0000 0000",
+        "city": "上海",
+        "target_roles": ["Senior Data Engineer"],
+        "years_experience": 7,
+        "skills": ["Python", "SQL", "Spark", "Airflow", "AWS", "Docker"],
+        "summary": "七年合成数据平台经历，方向覆盖批流处理、数据质量与云端任务编排。本档案完全虚构，仅用于资历匹配测试。",
+        "education": [{"school": "北辰科技大学（虚构）", "degree": "本科", "major": "软件工程", "graduation_year": 2019}],
+        "work_experience": [{
+          "company": "远山数据系统（虚构）",
+          "title": "数据工程师",
+          "start_date": "2019-07-01",
+          "end_date": "2026-07-31",
+          "highlights": ["维护合成数据管道与质量规则", "设计演示用批流任务编排方案"]
+        }]
+      },
+      "preferred_locations": ["Berlin", "Remote"],
+      "remote_preference": "any"
+    }
+  ]
+}

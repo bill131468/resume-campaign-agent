@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>星河实业｜职位申请（已完成登录演练）</title>
+  <style>
+    :root { --paper:#f5efdf; --ink:#222823; --green:#294d3d; --line:#c8bda5; }
+    * { box-sizing:border-box; } body { margin:0; color:var(--ink); background:#d6ceba; font:15px/1.5 Inter,"Noto Sans SC",system-ui,sans-serif; }
+    main { width:min(760px,calc(100% - 32px)); margin:38px auto; padding:40px; background:var(--paper); border:1px solid #ab9f85; box-shadow:12px 14px 0 #58514425; }
+    header { padding-bottom:16px; border-bottom:2px solid var(--green); } small { color:#6f6a5e; font:700 10px ui-monospace,monospace; letter-spacing:.14em; } h1 { margin:4px 0; font:700 27px Georgia,"Noto Serif SC",serif; }
+    .success { padding:11px 12px; color:var(--green); background:#dfe7dc; border-left:4px solid var(--green); font-weight:750; }
+    form { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:22px; } label { display:grid; gap:6px; font-weight:700; }.wide { grid-column:1/-1; }
+    input,textarea { width:100%; padding:11px; color:var(--ink); background:#fffdf6; border:1px solid var(--line); font:15px system-ui,sans-serif; } textarea { min-height:100px; }
+    button { grid-column:1/-1; padding:13px; color:#fff; background:#77776f; border:0; font-weight:800; cursor:not-allowed; }
+    @media(max-width:600px){ main{padding:24px}form{grid-template-columns:1fr}.wide,button{grid-column:auto} }
+  </style>
+</head>
+<body>
+  <main>
+    <header><small>OFFICIAL CAREERS · LOCAL MOCK</small><h1>AI Engineer｜申请资料</h1></header>
+    <p class="success">认证接力已完成。副驾驶可重新扫描、填写，并在逐岗位授权后触发本机模拟提交。</p>
+    <form autocomplete="off">
+      <label>候选人姓名<input name="candidate_name" autocomplete="name" /></label>
+      <label>电子邮箱<input name="contact_email" type="email" autocomplete="email" /></label>
+      <label>现居城市<input name="current_city" /></label>
+      <label>申请岗位<input name="position_applied" value="AI Engineer" readonly /></label>
+      <label class="wide">专业技能<textarea name="skills"></textarea></label>
+      <label class="wide">自我评价<textarea name="self_evaluation"></textarea></label>
+      <button id="submit-application" type="button">提交申请</button>
+    </form>
+  </main>
+  <script>
+    document.querySelector('#submit-application').addEventListener('click', () => {
+      location.assign('/browser-submission-receipt');
+    });
+  </script>
+</body>
+</html>

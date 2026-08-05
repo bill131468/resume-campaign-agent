@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "简历投递副驾驶",
+  "version": "0.6.0",
+  "description": "从招聘官网首页核验在招岗位，人工接力验证码，自动填表，并在逐岗位授权后提交申请。",
+  "minimum_chrome_version": "116",
+  "permissions": ["activeTab", "scripting", "storage", "sidePanel"],
+  "host_permissions": ["http://127.0.0.1:18010/*"],
+  "optional_host_permissions": ["http://*/*", "https://*/*"],
+  "background": { "service_worker": "service-worker.js" },
+  "content_scripts": [
+    {
+      "matches": ["http://127.0.0.1:18010/*"],
+      "js": ["bridge.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "action": { "default_title": "打开简历投递副驾驶" },
+  "side_panel": { "default_path": "panel.html" }
+}

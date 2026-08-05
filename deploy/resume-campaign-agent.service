@@ -1,0 +1,29 @@
+[Unit]
+Description=Resume Campaign Agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=resumeagent
+Group=resumeagent
+WorkingDirectory=/opt/resume-campaign-agent
+EnvironmentFile=/etc/resume-campaign-agent.env
+Environment=AGENT_HOST=127.0.0.1
+Environment=AGENT_PORT=18010
+ExecStart=/opt/resume-campaign-agent/.venv/bin/python -m resume_campaign_agent
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=15
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target
