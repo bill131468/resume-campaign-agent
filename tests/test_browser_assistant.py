@@ -163,6 +163,10 @@ def test_extension_manifest_has_gated_submit_and_no_broad_fixed_host_permission(
     assert "RC_APPLY_PLAN" in content
     assert "RC_HIGHLIGHT_PLAN" in content
     panel = (manifest_path.parent / "panel.js").read_text(encoding="utf-8")
+    panel_html = (manifest_path.parent / "panel.html").read_text(encoding="utf-8")
+    assert "mock-button" not in panel
+    assert "mock-button" not in panel_html
+    assert "/browser-fixture" not in panel
     assert "ResumeCopilotPermissions.request(chrome" in panel
     assert "ResumeCopilotPermissions.remove(chrome" in panel
     assert 'files: ["auth-utils.js", "journey-utils.js", "content.js", "auth-content.js", "journey-content.js", "submit-content.js"]' in panel

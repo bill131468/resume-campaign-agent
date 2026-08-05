@@ -50,6 +50,24 @@ def client():
         llm_model=None,
         job_api_url="https://example.invalid",
         request_timeout_seconds=1,
+        app_environment="test",
+        enable_test_fixtures=True,
+    )
+    with TestClient(create_app(settings=settings, job_provider=FakeJobProvider())) as test_client:
+        yield test_client
+
+
+@pytest.fixture
+def production_client():
+    settings = Settings(
+        llm_provider="openai-compatible",
+        llm_api_key=None,
+        llm_base_url=None,
+        llm_model=None,
+        job_api_url="https://example.invalid",
+        request_timeout_seconds=1,
+        app_environment="production",
+        enable_test_fixtures=False,
     )
     with TestClient(create_app(settings=settings, job_provider=FakeJobProvider())) as test_client:
         yield test_client
@@ -70,4 +88,3 @@ def complete_resume():
             {"school": "示例大学", "degree": "本科", "major": "计算机科学", "graduation_year": 2026}
         ],
     }
-

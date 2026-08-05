@@ -358,7 +358,11 @@ class HealthResponse(BaseModel):
     ok: bool
     runtime: str
     agent_framework: str
-    delivery_mode: Literal["dry_run"]
+    delivery_mode: Literal["dry_run", "per_application_authorized"]
+    deployment_mode: Literal["production", "test"]
+    test_fixtures_enabled: bool
+    server_dispatch_enabled: Literal[False] = False
+    browser_submission_enabled: bool
     llm_configured: bool
     model: str | None = None
     enterprise_search: str | None = None

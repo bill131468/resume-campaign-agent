@@ -102,7 +102,7 @@ def create_app(
 
     app = FastAPI(
         title="Resume Campaign Agent",
-        version="0.2.0",
+        version="0.2.1",
         description="Pydantic AI resume completion and job-campaign preview API",
     )
     app.state.settings = settings
@@ -136,7 +136,16 @@ def create_app(
             ok=True,
             runtime=f"Python {platform.python_version()}",
             agent_framework="pydantic-ai",
-            delivery_mode="dry_run",
+            delivery_mode=(
+                "dry_run"
+                if settings.enable_test_fixtures
+                else "per_application_authorized"
+            ),
+            deployment_mode=(
+                "test" if settings.enable_test_fixtures else "production"
+            ),
+            test_fixtures_enabled=settings.enable_test_fixtures,
+            browser_submission_enabled=not settings.enable_test_fixtures,
             llm_configured=settings.llm_configured,
             model=settings.llm_model if settings.llm_configured else None,
             enterprise_search="agent-reach-exa+official-catalog",
@@ -519,33 +528,38 @@ def create_app(
 
     static_dir = Path(__file__).resolve().parent / "static"
 
-    @app.get("/browser-test", include_in_schema=False)
-    async def browser_test_form() -> FileResponse:
-        return FileResponse(static_dir / "browser-test.html", media_type="text/html")
+    if settings.enable_test_fixtures:
+        @app.get("/browser-test", include_in_schema=False)
+        async def browser_test_form() -> FileResponse:
+            return FileResponse(static_dir / "browser-test.html", media_type="text/html")
 
-    @app.get("/browser-auth-test", include_in_schema=False)
-    async def browser_auth_test_form() -> FileResponse:
-        return FileResponse(static_dir / "browser-auth-test.html", media_type="text/html")
+        @app.get("/browser-auth-test", include_in_schema=False)
+        async def browser_auth_test_form() -> FileResponse:
+            return FileResponse(static_dir / "browser-auth-test.html", media_type="text/html")
 
-    @app.get("/browser-fixture", include_in_schema=False)
-    async def browser_career_home() -> FileResponse:
-        return FileResponse(static_dir / "browser-career-home.html", media_type="text/html")
+        @app.get("/browser-fixture", include_in_schema=False)
+        async def browser_career_home() -> FileResponse:
+            return FileResponse(static_dir / "browser-career-home.html", media_type="text/html")
 
-    @app.get("/browser-fixture/jobs", include_in_schema=False)
-    async def browser_job_list() -> FileResponse:
-        return FileResponse(static_dir / "browser-job-list.html", media_type="text/html")
+        @app.get("/browser-fixture/jobs", include_in_schema=False)
+        async def browser_job_list() -> FileResponse:
+            return FileResponse(static_dir / "browser-job-list.html", media_type="text/html")
 
-    @app.get("/browser-fixture/position/{position_id}/detail", include_in_schema=False)
-    async def browser_job_detail(position_id: str) -> FileResponse:
-        return FileResponse(static_dir / "browser-job-detail.html", media_type="text/html")
+        @app.get("/browser-fixture/position/{position_id}/detail", include_in_schema=False)
+        async def browser_job_detail(position_id: str) -> FileResponse:
+            return FileResponse(static_dir / "browser-job-detail.html", media_type="text/html")
 
-    @app.get("/browser-auth-complete", include_in_schema=False)
-    async def browser_auth_complete_form() -> FileResponse:
-        return FileResponse(static_dir / "browser-auth-complete.html", media_type="text/html")
+        @app.get("/browser-auth-complete", include_in_schema=False)
+        async def browser_auth_complete_form() -> FileResponse:
+            return FileResponse(static_dir / "browser-auth-complete.html", media_type="text/html")
 
-    @app.get("/browser-submission-receipt", include_in_schema=False)
-    async def browser_submission_receipt() -> FileResponse:
-        return FileResponse(static_dir / "browser-submission-receipt.html", media_type="text/html")
+        @app.get("/browser-submission-receipt", include_in_schema=False)
+        async def browser_submission_receipt() -> FileResponse:
+            return FileResponse(static_dir / "browser-submission-receipt.html", media_type="text/html")
+    else:
+        @app.get("/browser-{fixture_path:path}", include_in_schema=False)
+        async def disabled_browser_fixture(fixture_path: str) -> None:
+            raise HTTPException(status_code=404, detail="test fixtures are disabled")
 
     if static_dir.exists():
         app.mount("/", StaticFiles(directory=static_dir, html=True), name="frontend")

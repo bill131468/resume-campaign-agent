@@ -20,6 +20,8 @@ class Settings:
     job_api_url: str
     request_timeout_seconds: float
     ai_ranking_timeout_seconds: float = 45.0
+    app_environment: str = "production"
+    enable_test_fixtures: bool = False
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -35,6 +37,11 @@ class Settings:
             ai_ranking_timeout_seconds=float(
                 os.getenv("AI_RANKING_TIMEOUT_SECONDS", "45")
             ),
+            app_environment=os.getenv("APP_ENV", "production").strip().lower(),
+            enable_test_fixtures=os.getenv("ENABLE_TEST_FIXTURES", "false")
+            .strip()
+            .lower()
+            in {"1", "true", "yes", "on"},
         )
 
     @property

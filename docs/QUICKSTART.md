@@ -1,6 +1,6 @@
 # 快速开始
 
-本手册用于在本机完成一次不产生外部投递副作用的合成数据体验。默认端口为 `18010`，默认存储为进程内存。
+本手册用于启动正式模式工作台。默认端口为 `18010`，默认存储为进程内存，测试 fixture 默认关闭。
 
 ## 1. 环境要求
 
@@ -63,16 +63,17 @@ LLM_API_KEY=your-local-secret
 Invoke-RestMethod http://127.0.0.1:18010/api/health
 ```
 
-预期：`ok=true`、`agent_framework=pydantic-ai`、`delivery_mode=dry_run`。`llm_configured=false` 不是启动失败，只代表自然语言 Agent 不可用。
+预期：`ok=true`、`agent_framework=pydantic-ai`、`deployment_mode=production`、`delivery_mode=per_application_authorized`、`test_fixtures_enabled=false`。`llm_configured=false` 不是启动失败，只代表自然语言 Agent 不可用。
 
-## 5. 第一次安全演练
+## 5. 第一次正式使用
 
 1. 打开 <http://127.0.0.1:18010/>。
-2. 保留页面内明确标记的合成档案。
-3. 运行简历审核，确认出现六维报告。
-4. 按目标方向和 Base 搜索企业，检查每个入口是否标记为官网或待核验渠道。
-5. 打开 <http://127.0.0.1:18010/browser-fixture>，完成首页→职位列表→详情→登录→申请表→回执的本机链路。
-6. 不要在真实招聘官网发送验证码或提交合成档案。
+2. 填写并逐项核对本人的真实简历，不要使用页面示例或虚构经历。
+3. 运行简历审核，修复缺失字段并确认事实没有被改写。
+4. 按目标方向和 Base 搜索企业，检查入口是否为官方渠道。
+5. 安装扩展后选择一个真实岗位，AI 会进入官网；验证码和最终提交仍需当前岗位单独确认。
+
+需要开发测试 fixture 时，在独立终端设置 `ENABLE_TEST_FIXTURES=true` 后启动，不要把该变量用于正式部署。
 
 ## 6. 安装浏览器扩展
 

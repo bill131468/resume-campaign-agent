@@ -5,6 +5,42 @@ def test_health_exposes_dry_run_boundary(client):
     assert body["ok"] is True
     assert body["agent_framework"] == "pydantic-ai"
     assert body["delivery_mode"] == "dry_run"
+    assert body["deployment_mode"] == "test"
+    assert body["test_fixtures_enabled"] is True
+    assert body["browser_submission_enabled"] is False
+
+
+def test_production_mode_starts_empty_and_hides_all_browser_fixtures(production_client):
+    health = production_client.get("/api/health").json()
+    assert health["deployment_mode"] == "production"
+    assert health["delivery_mode"] == "per_application_authorized"
+    assert health["test_fixtures_enabled"] is False
+    assert health["server_dispatch_enabled"] is False
+    assert health["browser_submission_enabled"] is True
+
+    home = production_client.get("/")
+    assert home.status_code == 200
+    assert "正式投递模式" in home.text
+    assert "REAL PROFILE" in home.text
+    assert "合成测试档案" not in home.text
+    assert "loadDemoButton" not in home.text
+    assert "星河消费（虚构）" not in home.text
+
+    app_script = production_client.get("/app.js")
+    assert app_script.status_code == 200
+    assert "syntheticCase" not in app_script.text
+    assert "fillResume(syntheticCase)" not in app_script.text
+
+    for path in (
+        "/browser-test",
+        "/browser-auth-test",
+        "/browser-fixture",
+        "/browser-fixture/jobs",
+        "/browser-auth-complete",
+        "/browser-submission-receipt",
+        "/browser-submission-receipt.html",
+    ):
+        assert production_client.get(path).status_code == 404
 
 
 def test_missing_resume_blocks_application_drafts(client):

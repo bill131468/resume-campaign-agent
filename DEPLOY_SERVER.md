@@ -96,7 +96,7 @@ docker compose logs --tail=100 resume-agent
 df -h
 ```
 
-健康响应应包含 `ok=true` 和 `delivery_mode=dry_run`。磁盘不足、职位源超时或 LLM 不可用不得关闭安全闸门。日志对外分享前必须去除请求载荷、简历字段、主机信息和凭据。
+健康响应应包含 `ok=true`、`deployment_mode=production`、`delivery_mode=per_application_authorized` 和 `test_fixtures_enabled=false`。磁盘不足、职位源超时或 LLM 不可用不得关闭安全闸门。日志对外分享前必须去除请求载荷、简历字段、主机信息和凭据。
 
 ## 浏览器边界
 

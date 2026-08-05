@@ -2,7 +2,7 @@ services:
   resume-agent:
     build:
       context: .
-    image: resume-campaign-agent:0.2.0
+    image: resume-campaign-agent:0.2.1
     restart: unless-stopped
     env_file:
       - path: .env.server
@@ -10,6 +10,8 @@ services:
     environment:
       AGENT_HOST: 0.0.0.0
       AGENT_PORT: 18010
+      APP_ENV: production
+      ENABLE_TEST_FIXTURES: "false"
     ports:
       - "127.0.0.1:${AGENT_PORT:-18010}:18010"
     healthcheck:

@@ -6,6 +6,18 @@
 
 - 预留持久数据库、身份认证、稳定域名和训练反馈闭环。
 
+## [0.2.1] - 2026-08-05
+
+### Fixed
+
+- 正式部署默认不再载入合成简历或虚构岗位数据。
+- 测试 fixture 路由改为 `ENABLE_TEST_FIXTURES=true` 才启用；生产模式下模拟回执及其 `.html` 路径均返回 `404`。
+- 浏览器扩展 0.7.0 删除“本机全流程招聘演练”入口。
+
+### Changed
+
+- 健康接口明确返回 `deployment_mode=production` 与 `delivery_mode=per_application_authorized`。
+
 ## [0.2.0] - 2026-08-05
 
 ### Added

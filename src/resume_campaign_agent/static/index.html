@@ -20,7 +20,6 @@
         <span class="strip-rule"></span><span id="sourceText">Exa AI + 官方入口</span>
       </div>
       <nav class="mast-actions" aria-label="页面操作">
-        <button class="quiet-button" id="loadDemoButton" type="button">重置合成简历</button>
         <button class="quiet-button" id="portalJumpButton" type="button">查看网申字段</button>
         <a class="quiet-link" href="/docs" target="_blank" rel="noreferrer">API 文档</a>
       </nav>
@@ -37,8 +36,8 @@
       </section>
 
       <div class="synthetic-notice" role="note">
-        <strong>合成测试档案</strong>
-        <span>姓名、学校、经历和联系方式均为虚构。可用它在真实官网安全预演到登录页或申请页，但不会发送验证码、填入字段或最终提交；真实投递前必须替换为真实资料。</span>
+        <strong>正式投递模式</strong>
+        <span>请填写并核对本人的真实简历。AI 会搜索企业官网并接管申请流程；验证码和最终提交仍需你针对当前岗位明确确认。</span>
       </div>
 
       <section class="campaign-rail" aria-label="工作轨道">
@@ -49,7 +48,7 @@
 
       <section class="workspace">
         <article class="paper-panel resume-panel" aria-labelledby="resumeTitle">
-          <div class="panel-heading"><div><p class="panel-index">01 / UNIVERSAL RESUME</p><h2 id="resumeTitle">通用候选人档案</h2></div><span class="file-chip">SYNTHETIC</span></div>
+          <div class="panel-heading"><div><p class="panel-index">01 / UNIVERSAL RESUME</p><h2 id="resumeTitle">通用候选人档案</h2></div><span class="file-chip">REAL PROFILE</span></div>
           <form id="resumeForm" novalidate>
             <fieldset>
               <legend>基本信息与联系方式</legend>
@@ -204,14 +203,12 @@
 
         <div class="career-input-sheet">
           <div class="career-job-grid">
-            <label>企业<input id="careerCompany" value="星河消费（虚构）"></label>
-            <label>岗位<input id="careerTitle" value="品牌运营"></label>
-            <label>Base<input id="careerLocation" value="上海"></label>
+            <label>企业<input id="careerCompany" placeholder="从上方岗位清单选择或填写真实企业"></label>
+            <label>岗位<input id="careerTitle" placeholder="填写真实岗位名称"></label>
+            <label>Base<input id="careerLocation" placeholder="岗位工作城市"></label>
             <label>截止日期<input id="careerDeadline" type="date"></label>
-            <label class="span-two">官网投递 URL<input id="careerUrl" value="https://careers.example.com/jobs/brand-operation"></label>
-            <label class="span-two">岗位 JD<textarea id="careerJD" rows="6" maxlength="12000">岗位职责：负责品牌内容策划、用户调研和活动复盘。
-任职要求：本科及以上学历，具备 Excel 数据整理能力。
-有消费品校园推广经验者优先。</textarea></label>
+            <label class="span-two">官网投递 URL<input id="careerUrl" placeholder="https://企业官方招聘域名/岗位路径"></label>
+            <label class="span-two">岗位 JD<textarea id="careerJD" rows="6" maxlength="12000" placeholder="粘贴官网真实岗位职责与任职要求"></textarea></label>
           </div>
           <div class="career-command-rail">
             <button id="buildCareerDossierButton" class="career-primary" type="button"><span>生成岗位作战包</span><small>PARSE · MATCH · RISK · RANK</small></button>
@@ -241,8 +238,8 @@
           <article class="career-module" id="careerPortalDesk">
             <div class="career-module-title"><span>03</span><div><h3>官网适配、提交预检与断点</h3><p>识别门户、检查附件和敏感字段；最终提交仍需逐岗位确认</p></div></div>
             <div class="portal-preflight-form">
-              <label>页面已识别字段<input id="portalDetectedFields" value="name, email, phone, resume"></label>
-              <label>已准备附件<input id="portalAttachments" value="品牌运营岗位简历.pdf"></label>
+              <label>页面已识别字段<input id="portalDetectedFields" placeholder="由官网扫描结果填写，例如 name, email, phone"></label>
+              <label>已准备附件<input id="portalAttachments" placeholder="填写本人已准备的真实附件名称"></label>
               <div><button id="runPortalPreflightButton" type="button">运行提交前检查</button><button id="saveCheckpointButton" type="button">保存填写断点</button></div>
             </div>
             <div class="career-module-body" id="careerPortalBody"><div class="career-placeholder">尚未检查官网页面。</div></div>
@@ -256,7 +253,7 @@
           <article class="career-module" id="careerInterviewDesk">
             <div class="career-module-title"><span>05</span><div><h3>面试准备与一致性训练</h3><p>根据 JD 和岗位简历追问；回答不得超出事实母版</p></div></div>
             <div class="interview-simulator">
-              <label>模拟问题<input id="interviewQuestion" value="请介绍一次你主导的项目经历。"></label>
+              <label>面试问题<input id="interviewQuestion" placeholder="填写要练习的真实面试问题"></label>
               <label>你的回答<textarea id="interviewAnswer" rows="4" placeholder="使用背景、目标、行动、结果组织回答"></textarea></label>
               <button id="simulateInterviewButton" type="button">审核这段回答</button>
             </div>
@@ -268,8 +265,8 @@
             <div class="evidence-vault-grid">
               <div class="evidence-entry">
                 <strong>添加证据记录</strong>
-                <label>证据名称<input id="evidenceLabel" value="校园推广问卷统计表（合成）"></label>
-                <label>可核实事实<input id="evidenceFacts" value="有效问卷 300 份, 协调 8 名成员"></label>
+                <label>证据名称<input id="evidenceLabel" placeholder="项目报告、获奖证明或成果记录"></label>
+                <label>可核实事实<input id="evidenceFacts" placeholder="只填写能够由本人材料证明的事实"></label>
                 <button id="addEvidenceButton" type="button">保存到证据库</button>
               </div>
               <div class="vault-entry">
@@ -298,6 +295,6 @@
     <footer><span>Resume Campaign Agent · Pydantic AI</span><span>Exa AI 搜索 + 中国企业官方目录 · 验证码人工接力 · 逐岗位授权投递</span></footer>
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="/app.js?v=8" defer></script>
+  <script src="/app.js?v=9" defer></script>
 </body>
 </html>

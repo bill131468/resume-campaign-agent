@@ -9,6 +9,8 @@
 - 会话 ID 由 `POST /api/sessions` 返回。
 - `404` 表示会话或资源不存在；`422` 表示 Pydantic 校验失败；`503` 表示外部职位源或可选 LLM 不可用。
 - `POST /api/campaigns/dispatch` 固定返回 `403`，不是配置错误。
+- 正式健康状态返回 `deployment_mode=production`、`delivery_mode=per_application_authorized`；这表示只有浏览器逐岗位授权链路可提交，服务端后台派发仍禁用。
+- `ENABLE_TEST_FIXTURES=true` 只用于隔离开发测试，此时健康状态为 `deployment_mode=test`、`delivery_mode=dry_run`。
 
 ## 端点分组
 

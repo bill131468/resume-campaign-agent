@@ -13,7 +13,7 @@ New-Item -ItemType Directory -Path $outputRoot -Force | Out-Null
 $temporaryRoot = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath())
 $stageRoot = Join-Path $temporaryRoot ("resume-campaign-release-" + [guid]::NewGuid().ToString("N"))
 $serverStage = Join-Path $stageRoot "resume-campaign-agent-server"
-$extensionStage = Join-Path $stageRoot "resume-campaign-agent-extension-v0.6.0"
+$extensionStage = Join-Path $stageRoot "resume-campaign-agent-extension-v0.7.0"
 
 try {
     New-Item -ItemType Directory -Path $serverStage -Force | Out-Null
@@ -54,8 +54,8 @@ try {
         Copy-Item -LiteralPath (Join-Path $projectRoot "browser_extension\$_") -Destination $extensionStage
     }
 
-    $serverArchive = Join-Path $outputRoot "resume-campaign-agent-server-0.2.0.zip"
-    $extensionArchive = Join-Path $outputRoot "resume-campaign-agent-extension-v0.6.0.zip"
+    $serverArchive = Join-Path $outputRoot "resume-campaign-agent-server-0.2.1.zip"
+    $extensionArchive = Join-Path $outputRoot "resume-campaign-agent-extension-v0.7.0.zip"
     Compress-Archive -Path (Join-Path $serverStage "*") -DestinationPath $serverArchive -CompressionLevel Optimal -Force
     Compress-Archive -Path (Join-Path $extensionStage "*") -DestinationPath $extensionArchive -CompressionLevel Optimal -Force
 

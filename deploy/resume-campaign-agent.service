@@ -11,6 +11,8 @@ WorkingDirectory=/opt/resume-campaign-agent
 EnvironmentFile=/etc/resume-campaign-agent.env
 Environment=AGENT_HOST=127.0.0.1
 Environment=AGENT_PORT=18010
+Environment=APP_ENV=production
+Environment=ENABLE_TEST_FIXTURES=false
 ExecStart=/opt/resume-campaign-agent/.venv/bin/python -m resume_campaign_agent
 Restart=on-failure
 RestartSec=3

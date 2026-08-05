@@ -1,34 +1,5 @@
 const $ = (selector) => document.querySelector(selector);
 
-const syntheticCase = {
-  resume: {
-    full_name: "陈知夏（合成示例）", preferred_name: "知夏", email: "zhixia.chen.demo@example.com",
-    phone: "+86 188 0000 2468", wechat: "zhixia_demo_2026", city: "上海",
-    professional_headline: "法学应届生｜法律合规与风险管理方向", job_seeking_status: "2026 届校招，积极求职",
-    target_roles: ["法律合规", "风险管理", "管理培训生"], target_industries: ["银行", "金融", "先进制造"],
-    target_employer_types: ["央企国企", "大型民营企业", "外资企业"], employment_types: ["校园招聘", "全职"],
-    base_locations: ["上海", "杭州", "苏州"], years_experience: 0.8, available_date: "2026-07-01",
-    expected_salary: "税前 12k–18k/月，可面议", relocation_preference: "优先上海，可接受杭州、苏州及长三角调剂",
-    skills: ["法律检索", "合同审阅", "合规分析", "Excel", "数据分析", "英文写作"],
-    summary: "法学应届毕业生，具备银行法务实习、模拟项目与校园组织经历，关注金融合规、风险管理和企业治理。能够完成法规检索、合同条款梳理与结构化分析。全部经历为产品测试用合成内容。",
-    education: [{ school: "江湾财经大学（虚构）", college: "法学院", degree: "法学学士", major: "法学", minor: "金融学",
-      graduation_year: 2026, location: "上海", start_date: "2022-09-01", end_date: "2026-06-30", education_type: "全日制",
-      gpa: 3.72, gpa_scale: 4, rank: "专业前 15%", core_courses: ["商法", "金融法", "合同法", "公司法"], thesis: "商业银行数据合规治理研究（合成课题）" }],
-    work_experience: [{ company: "浦江商业银行法律合规部（虚构）", title: "合规实习生", experience_type: "internship", department: "法律合规部",
-      location: "上海", start_date: "2025-07-01", end_date: "2025-10-31", responsibilities: "协助法规动态跟踪、合同条款核对和合规台账整理。",
-      highlights: ["整理 60 余条监管规则并形成主题索引", "复核 20 余份合成合同样本的关键条款"], leaving_reason: "实习期结束" }],
-    projects: [{ name: "长三角制造企业合规风险地图（合成项目）", role: "项目负责人", start_date: "2025-03-01", end_date: "2025-06-30",
-      description: "围绕制造企业采购、数据与劳动用工场景，构建风险分类与检索框架。", highlights: ["形成 4 类风险清单和展示报告"], skills: ["法律检索", "Excel", "访谈整理"] }],
-    campus_experience: [{ organization: "模拟法庭协会（虚构）", role: "项目部长", start_date: "2023-09-01", end_date: "2025-06-30", description: "组织校内模拟法庭训练与案例研讨，协调 30 名成员完成活动。" }],
-    certificates: [{ name: "大学英语六级", issuer: "教育部教育考试院", score: "568（合成）" }],
-    language_details: [{ language: "英语", proficiency: "熟练", test_name: "CET-6", score: "568（合成）" }],
-    awards: [{ name: "校级优秀学生干部（合成）", issuer: "江湾财经大学（虚构）" }],
-    hobbies: ["城市徒步", "羽毛球", "非虚构阅读"], self_evaluation: "重视事实准确与过程留痕，善于把复杂规则整理成清晰清单；愿意从业务一线理解风险与合规。",
-    additional_information: "本档案为合成测试数据，不包含可用于真实投递的个人身份信息。"
-  },
-  company_keywords: []
-};
-
 let currentDiscovery = null;
 let currentSessionId = null;
 let currentReview = null;
@@ -41,31 +12,6 @@ function splitValues(input) { return String(input || "").split(/[,，\n]/).map((
 function value(id) { return $(`#${id}`).value.trim(); }
 function optional(id) { return value(id) || null; }
 function setField(id, fieldValue) { const el = $(`#${id}`); if (el) el.value = fieldValue ?? ""; }
-
-function fillResume(caseData) {
-  const r = caseData.resume; const e = r.education?.[0] || {}; const w = r.work_experience?.[0] || {};
-  const p = r.projects?.[0] || {}; const c = r.campus_experience?.[0] || {}; const cert = r.certificates?.[0] || {};
-  const lang = r.language_details?.[0] || {}; const award = r.awards?.[0] || {};
-  const fields = {
-    fullName:r.full_name, preferredName:r.preferred_name, city:r.city, professionalHeadline:r.professional_headline, email:r.email, phone:r.phone,
-    wechat:r.wechat, jobSeekingStatus:r.job_seeking_status, targetRoles:r.target_roles?.join(", "), targetIndustries:r.target_industries?.join(", "),
-    targetEmployerTypes:r.target_employer_types?.join(", "), baseLocations:r.base_locations?.join(", "), companyKeywords:(caseData.company_keywords||[]).join(", "),
-    employmentTypes:r.employment_types?.join(", "), yearsExperience:r.years_experience, availableDate:r.available_date, expectedSalary:r.expected_salary,
-    relocationPreference:r.relocation_preference, skills:r.skills?.join(", "), summary:r.summary,
-    school:e.school, college:e.college, major:e.major, minor:e.minor, degree:e.degree, educationType:e.education_type, educationStartDate:e.start_date,
-    educationEndDate:e.end_date, graduationYear:e.graduation_year, educationLocation:e.location, gpa:e.gpa, gpaScale:e.gpa_scale, rank:e.rank,
-    coreCourses:e.core_courses?.join(", "), thesis:e.thesis,
-    company:w.company, jobTitle:w.title, experienceType:w.experience_type, department:w.department, workLocation:w.location, startDate:w.start_date,
-    endDate:w.end_date, responsibilities:w.responsibilities, highlights:w.highlights?.join("\n"), leavingReason:w.leaving_reason,
-    projectName:p.name, projectRole:p.role, projectStartDate:p.start_date, projectEndDate:p.end_date, projectDescription:p.description,
-    projectHighlights:p.highlights?.join("\n"), projectSkills:p.skills?.join(", "), campusOrganization:c.organization, campusRole:c.role,
-    campusDescription:c.description, certificateName:cert.name, certificateIssuer:cert.issuer, certificateScore:cert.score, language:lang.language,
-    languageProficiency:lang.proficiency, languageTest:lang.test_name, languageScore:lang.score, awardName:award.name,
-    hobbies:r.hobbies?.join(", "), selfEvaluation:r.self_evaluation, additionalInformation:r.additional_information
-  };
-  Object.entries(fields).forEach(([id, fieldValue]) => setField(id, fieldValue));
-  resetDiscovery(); resetReviewDesk(); showToast("已载入法学方向合成简历；企业来源仍为真实检索");
-}
 
 function collectResume() {
   const education = value("school") ? [{
@@ -114,7 +60,7 @@ async function requestJson(url, options={}) {
 
 async function checkHealth(){
   try { const h=await requestJson("/api/health"); $("#healthDot").classList.add("is-online");
-    $("#healthText").textContent=h.delivery_mode==="dry_run"?"Agent 在线 · 逐岗位授权":"Agent 在线";
+    $("#healthText").textContent=h.deployment_mode==="production"?"Agent 在线 · 正式逐岗位投递":"Agent 在线 · 测试夹具模式";
     $("#modelText").textContent=h.model||"LLM 排序未配置"; $("#sourceText").textContent=h.enterprise_search||"Exa AI + 官方入口";
   } catch { $("#healthText").textContent="Agent 未连接"; }
 }
@@ -488,7 +434,6 @@ function resetCareerOS(){
   $("#careerOSStamp").textContent="等待岗位";$("#careerOSStamp").classList.remove("is-ready");
 }
 
-$("#loadDemoButton").addEventListener("click",()=>fillResume(syntheticCase));
 $("#runCampaignButton").addEventListener("click",runDiscovery);
 $("#reviewResumeButton").addEventListener("click",reviewResume);
 $("#optimizeResumeButton").addEventListener("click",optimizeResume);
@@ -506,5 +451,5 @@ $("#editorialLedger").addEventListener("click",event=>{ const button=event.targe
 $("#resumeForm").addEventListener("input",()=>{ if(currentReview||currentOptimization){ $("#reviewGrade").textContent="待重新审核"; $("#reviewGrade").classList.remove("is-reviewed"); } resetCareerOS(); });
 $("#portalActionButton").addEventListener("click",loadPortalTemplate);
 $("#portalLinkButton").addEventListener("click",jumpPortal); $("#portalJumpButton").addEventListener("click",jumpPortal);
-checkHealth(); fillResume(syntheticCase); loadPortalTemplate();
+checkHealth(); loadPortalTemplate();
 const careerDeadline=new Date();careerDeadline.setDate(careerDeadline.getDate()+14);$("#careerDeadline").value=careerDeadline.toISOString().slice(0,10);

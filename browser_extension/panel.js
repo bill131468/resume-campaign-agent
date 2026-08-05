@@ -95,7 +95,7 @@ async function refreshPermissionStatus() {
       badge.textContent = '本机固定授权';
       badge.className = 'badge granted';
       $('#site-access-label').textContent = '当前页：本机固定授权';
-      grant.textContent = '本机演练页已经授权';
+      grant.textContent = '助手服务页已经授权';
       grant.disabled = true;
       revoke.hidden = true;
     } else if (granted) {
@@ -568,7 +568,6 @@ $("#fill-button").addEventListener("click", fill);
 $("#highlight-button").addEventListener("click", highlight);
 $("#grant-site-button").addEventListener("click", grantCurrentSite);
 $("#revoke-site-button").addEventListener("click", revokeCurrentSite);
-$("#mock-button").addEventListener("click", () => chrome.tabs.create({ url: `${API}/browser-fixture` }));
 $("#complete-auth-button").addEventListener("click", completeAuth);
 $("#auth-otp").addEventListener("input", refreshAuthButton);
 $("#auth-consent-approval").addEventListener("change", refreshAuthButton);
