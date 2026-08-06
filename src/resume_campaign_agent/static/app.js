@@ -214,7 +214,7 @@ function startAiTakeover(lead,index){
   const requestId=crypto.randomUUID();
   pendingTakeovers.set(requestId,{button,simulationOnly,timer:setTimeout(()=>{
     pendingTakeovers.delete(requestId); button.disabled=false; button.textContent="AI 核岗 · 接管官网";
-    showToast("未检测到浏览器副驾驶，请重新加载扩展 v0.6.0");
+    showToast("未检测到浏览器副驾驶，请确认已加载并重新加载扩展 v0.7.1");
   },4000)});
   window.postMessage({
     source:"resume-campaign-app",

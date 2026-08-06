@@ -30,12 +30,11 @@ function sanitizeHandoff(payload) {
   };
 }
 
-async function requestTargetPermission(url) {
+async function hasTargetPermission(url) {
   const target = new URL(url);
   if (LOCAL_ORIGINS.has(target.origin)) return true;
   const pattern = target.origin + "/*";
-  if (await chrome.permissions.contains({ origins: [pattern] })) return true;
-  return chrome.permissions.request({ origins: [pattern] });
+  return chrome.permissions.contains({ origins: [pattern] });
 }
 
 async function startTakeover(message, sender) {
@@ -43,9 +42,10 @@ async function startTakeover(message, sender) {
   if (!LOCAL_ORIGINS.has(senderOrigin)) throw new Error("只能从本机投递作战夹发起 AI 接管");
   const handoff = sanitizeHandoff(message.payload);
   handoff.takeoverId = String(message.requestId || "").slice(0, 120);
-  if (!(await requestTargetPermission(handoff.url))) throw new Error("未获得该招聘官网的单站点权限");
+  const sitePermissionGranted = await hasTargetPermission(handoff.url);
   const tab = await chrome.tabs.create({ url: handoff.url, active: true });
   handoff.tabId = tab.id;
+  handoff.sitePermissionGranted = sitePermissionGranted;
   await chrome.storage.session.set({ [handoffKey(tab.id)]: handoff });
   await chrome.sidePanel.setOptions({ tabId: tab.id, path: "panel.html", enabled: true });
   try {
@@ -53,7 +53,7 @@ async function startTakeover(message, sender) {
   } catch (_) {
     // Some browser versions require the user to click the extension icon.
   }
-  return { tabId: tab.id };
+  return { tabId: tab.id, permissionRequired: !sitePermissionGranted };
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {

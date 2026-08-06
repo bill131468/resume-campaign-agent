@@ -16,6 +16,8 @@ REQUIRED_FILES = {
     "CODE_OF_CONDUCT.md",
     "CHANGELOG.md",
     "docs/QUICKSTART.md",
+    "docs/LOCAL_USER_GUIDE.md",
+    "docs/AI_HANDOFF_LOCAL.md",
     "docs/ARCHITECTURE.md",
     "docs/API.md",
     "docs/TESTING.md",

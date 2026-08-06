@@ -193,7 +193,9 @@ def test_extension_manifest_has_gated_submit_and_no_broad_fixed_host_permission(
     assert "phone" not in bridge.casefold()
     assert "otp" not in bridge.casefold()
     worker = (manifest_path.parent / "service-worker.js").read_text(encoding="utf-8")
-    assert "chrome.permissions.request" in worker
+    assert "chrome.permissions.request" not in worker
+    assert "permissionRequired: !sitePermissionGranted" in worker
+    assert "permissions.request must be invoked synchronously" in panel
     assert "chrome.storage.session" in worker
     assert "simulationOnly: payload?.simulationOnly === true" in worker
     assert "phone" not in worker.casefold()

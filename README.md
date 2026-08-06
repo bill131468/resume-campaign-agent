@@ -68,7 +68,7 @@ python -m resume_campaign_agent
 
 LLM 是可选项。没有模型配置时，确定性规则、内置企业目录和大部分工作台仍可使用；自然语言 Agent 与部分 AI 排序会安全降级。复制 `.env.example` 为 `.env.local` 后只在本机填写配置，`.env.local` 已被 Git 忽略。
 
-更多说明：[快速开始](docs/QUICKSTART.md) · [浏览器扩展](BROWSER_EXTENSION.md) · [服务器部署](DEPLOY_SERVER.md)
+更多说明：[快速开始](docs/QUICKSTART.md) · [本地使用手册](docs/LOCAL_USER_GUIDE.md) · [AI 交接手册](docs/AI_HANDOFF_LOCAL.md) · [浏览器扩展](BROWSER_EXTENSION.md) · [服务器部署](DEPLOY_SERVER.md)
 
 ## 测试
 
@@ -85,6 +85,8 @@ python scripts/check_public_release.py
 | 文档 | 内容 |
 |---|---|
 | [快速开始](docs/QUICKSTART.md) | 安装、配置、首次合成测试 |
+| [本地使用手册](docs/LOCAL_USER_GUIDE.md) | 本地源码包安装、扩展、求职流程和故障处理 |
+| [AI 交接手册](docs/AI_HANDOFF_LOCAL.md) | 后续 AI / Codex 的边界、代码地图、验收命令和变更协议 |
 | [架构说明](docs/ARCHITECTURE.md) | 组件、数据流、Pydantic AI 工具与副作用闸门 |
 | [API 手册](docs/API.md) | 端点分组、调用示例与错误语义 |
 | [测试手册](docs/TESTING.md) | 自动化、浏览器旅程、负向测试、发布验收 |

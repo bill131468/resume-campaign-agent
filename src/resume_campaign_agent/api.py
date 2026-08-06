@@ -102,7 +102,7 @@ def create_app(
 
     app = FastAPI(
         title="Resume Campaign Agent",
-        version="0.2.1",
+        version="0.2.2",
         description="Pydantic AI resume completion and job-campaign preview API",
     )
     app.state.settings = settings

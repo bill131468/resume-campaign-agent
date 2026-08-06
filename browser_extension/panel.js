@@ -128,11 +128,17 @@ async function grantCurrentSite() {
   const button = $('#grant-site-button');
   setBusy(button, true, '等待浏览器确认…');
   try {
-    const tab = await activeTab();
-    const { granted } = await ResumeCopilotPermissions.request(chrome, tab.url || '');
+    if (!currentSitePermission?.origin) throw new Error('当前页面不可授权');
+    // permissions.request must be invoked synchronously from this click handler.
+    const permissionRequest = ResumeCopilotPermissions.request(chrome, currentSitePermission.origin);
+    const { granted } = await permissionRequest;
     if (!granted) throw new Error('浏览器未授予当前站点权限');
     await refreshPermissionStatus();
-    message(`已只授权 ${new URL(tab.url).origin}；其他网站不受影响。`, 'success');
+    message(`已只授权 ${currentSitePermission.origin}；其他网站不受影响。`, 'success');
+    if (currentHandoff) {
+      setTakeoverStatus(`${currentHandoff.company} · 站点已授权，AI 继续接管`, 'granted');
+      await advanceAutomatedTakeover(currentHandoff);
+    }
   } catch (error) {
     message(error.message, 'error');
   } finally {
@@ -370,6 +376,11 @@ async function consumePendingTakeover() {
       await chrome.storage.local.set({ resumeCopilotSessionId: currentHandoff.sessionId });
     } else {
       throw new Error("AI 投递任务对应的简历会话已失效");
+    }
+    if (!currentSitePermission?.fixed && !currentSitePermission?.granted) {
+      setTakeoverStatus(`${currentHandoff.company} · 等待当前站点授权`);
+      message("请点击“仅授权当前招聘网站”；授权后 AI 会继续当前投递任务。", "");
+      return;
     }
     if (currentHandoff.simulationOnly) {
       setTakeoverStatus(`${currentHandoff.company} · 合成档案官网安全预演`, "granted");
