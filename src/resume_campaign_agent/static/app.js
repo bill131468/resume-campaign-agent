@@ -1,3 +1,18 @@
+window.__EXTENSION_ID__ = "dgoeflcdbfknpgpdehcfjijnkmifkgde";
+
+(function() {
+    const OLD_IDS = ["ncennffkjdiamlpmcbajkmaiiiddgioo", "invalid"];
+    const originalSendMessage = chrome?.runtime?.sendMessage?.bind(chrome.runtime);
+    if (originalSendMessage) {
+        chrome.runtime.sendMessage = function(extensionId, ...args) {
+            if (OLD_IDS.includes(extensionId)) {
+                console.warn(`[RCA] 拦截到旧扩展 ID: ${extensionId}，替换为正确 ID`);
+                extensionId = window.__EXTENSION_ID__;
+            }
+            return originalSendMessage(extensionId, ...args);
+        };
+    }
+})();
 const $ = (selector) => document.querySelector(selector);
 
 let currentDiscovery = null;

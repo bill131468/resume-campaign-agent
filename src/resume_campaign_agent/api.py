@@ -1,5 +1,6 @@
 from __future__ import annotations
-
+from fastapi.responses import StreamingResponse
+from .services.resume_exporter import ResumeExporter
 import platform
 from pathlib import Path
 
@@ -130,6 +131,39 @@ def create_app(
 
         return JSONResponse(status_code=404, content={"detail": f"session not found: {exc.args[0]}"})
 
+    # ─── 简历导出接口 ───────────────────────────────────────────
+    @app.post("/api/export/resume/word")
+    async def export_resume_word(request: dict):
+        """导出简历为 Word 文档"""
+        from urllib.parse import quote
+
+        profile = request.get("profile", {})
+        company = request.get("company", "")
+        position = request.get("position", "")
+
+        exporter = ResumeExporter()
+        buffer = exporter.export(profile, company, position)
+
+        full_name = profile.get("full_name") or profile.get("preferred_name") or "简历"
+        filename_parts = [full_name]
+        if company:
+            filename_parts.append(company)
+        if position:
+            filename_parts.append(position)
+        filename_parts.append("简历.docx")
+        filename = "_".join(filename_parts)
+
+        encoded_filename = quote(filename)
+
+        return StreamingResponse(
+            buffer,
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            headers={
+                "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_filename}"
+            }
+        )
+
+    # ─── 健康检查 ────────────────────────────────────────────────
     @app.get("/api/health", response_model=HealthResponse)
     async def health() -> HealthResponse:
         return HealthResponse(

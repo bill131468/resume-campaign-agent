@@ -26,3 +26,9 @@ build/
 *.db
 
 /.env.local
+# 自动投递相关
+browser_data/
+submission_screenshots/
+*.docx
+test_download.py
+test_submit.py

@@ -16,5 +16,15 @@
     }
   ],
   "action": { "default_title": "打开简历投递副驾驶" },
-  "side_panel": { "default_path": "panel.html" }
+  "side_panel": { "default_path": "panel.html" },
+
+  "externally_connectable": {
+    "matches": ["http://127.0.0.1:18010/*"]
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["bridge.js", "panel.html", "panel.js"],
+      "matches": ["http://127.0.0.1:18010/*"]
+    }
+  ]
 }
