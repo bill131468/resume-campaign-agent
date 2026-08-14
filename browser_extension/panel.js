@@ -32,7 +32,6 @@ async function api(path, options = {}) {
   return response.json();
 }
 
-// ─── 新增：下载 blob 文件 ───
 async function downloadBlob(path, payload) {
   const response = await fetch(`${API}${path}`, {
     method: "POST",
@@ -47,12 +46,10 @@ async function downloadBlob(path, payload) {
   return response.blob();
 }
 
-// ─── 新增：安全文件名 ───
 function safeFilenamePart(value, fallback) {
   return String(value || fallback).trim().replace(/[\\/:*?"<>|]+/g, "_");
 }
 
-// ─── 新增：导出 Word 简历 ───
 async function exportWordResume() {
   const button = $("#export-word-button");
   const sessionId = $("#session-select").value;
@@ -137,7 +134,10 @@ async function refreshPermissionStatus() {
   const revoke = $('#revoke-site-button');
   try {
     const tab = await activeTab();
-    const state = await ResumeCopilotPermissions.inspect(chrome, tab.url || '', API);
+    if (!tab.url || !tab.url.startsWith("http")) {
+      throw new Error("请先切换到招聘网站页面");
+    }
+    const state = await ResumeCopilotPermissions.inspect(chrome, tab.url, API);
     const { pattern, origin, fixed, granted } = state;
     currentSitePermission = state;
     $('#site-origin').textContent = origin;
@@ -180,7 +180,6 @@ async function grantCurrentSite() {
   setBusy(button, true, '等待浏览器确认…');
   try {
     if (!currentSitePermission?.origin) throw new Error('当前页面不可授权');
-    // permissions.request must be invoked synchronously from this click handler.
     const permissionRequest = ResumeCopilotPermissions.request(chrome, currentSitePermission.origin);
     const { granted } = await permissionRequest;
     if (!granted) throw new Error('浏览器未授予当前站点权限');
