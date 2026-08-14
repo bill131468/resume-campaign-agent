@@ -80,6 +80,106 @@ async function exportWordResume() {
   }
 }
 
+async function uploadResumeAttachment() {
+  const button = $("#upload-resume-button");
+  setBusy(button, true, "等待选择文件...");
+  try {
+    const tab = await activeTab();
+    if (!tab.url || !tab.url.startsWith("http")) {
+      throw new Error("请先切换到招聘网站页面");
+    }
+
+    const [injection] = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: async () => {
+        const visible = (element) => Boolean(element && element.getClientRects().length);
+        const clean = (value) => String(value || "").replace(/\s+/g, " ").trim();
+
+        const fileInputs = Array.from(document.querySelectorAll('input[type="file"]'))
+          .filter((element) => !element.disabled && !element.readOnly);
+
+        if (!fileInputs.length) {
+          return { ok: false, error: "当前页面没有找到可用的附件上传控件" };
+        }
+
+        const scoreFileInput = (element) => {
+          const container = element.closest("label, .el-form-item, .ant-form-item, .form-item, [class*='upload' i], [class*='form' i]");
+          const text = [
+            element.accept,
+            element.name,
+            element.id,
+            element.getAttribute("aria-label"),
+            element.getAttribute("placeholder"),
+            container?.innerText,
+            container?.textContent
+          ].map(clean).join(" ").toLowerCase();
+
+          let score = visible(element) ? 10 : 0;
+          if (text.includes("简历") || text.includes("resume")) score += 50;
+          if (text.includes("附件") || text.includes("上传") || text.includes("upload")) score += 30;
+          if (text.includes(".doc") || text.includes("word")) score += 20;
+          if (text.includes("头像") || text.includes("photo") || text.includes("image")) score -= 50;
+          return score;
+        };
+
+        const targetInput = fileInputs
+          .map((element) => ({ element, score: scoreFileInput(element) }))
+          .sort((a, b) => b.score - a.score)[0]?.element;
+
+        if (!targetInput) {
+          return { ok: false, error: "未找到可用的简历附件上传控件" };
+        }
+
+        return await new Promise((resolve) => {
+          const picker = document.createElement("input");
+          picker.type = "file";
+          picker.accept = ".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+          picker.style.position = "fixed";
+          picker.style.left = "-9999px";
+          picker.style.top = "-9999px";
+          document.body.appendChild(picker);
+
+          picker.addEventListener("change", () => {
+            const file = picker.files?.[0];
+            picker.remove();
+
+            if (!file) {
+              resolve({ ok: false, error: "未选择文件" });
+              return;
+            }
+
+            if (!/\.docx?$/i.test(file.name)) {
+              resolve({ ok: false, error: "请选择 Word 简历文件（.doc 或 .docx）" });
+              return;
+            }
+
+            try {
+              const transfer = new DataTransfer();
+              transfer.items.add(file);
+              targetInput.files = transfer.files;
+              targetInput.dispatchEvent(new Event("input", { bubbles: true }));
+              targetInput.dispatchEvent(new Event("change", { bubbles: true }));
+              resolve({ ok: true, filename: file.name });
+            } catch (error) {
+              resolve({ ok: false, error: error.message || "浏览器拒绝设置附件文件" });
+            }
+          }, { once: true });
+
+          picker.click();
+        });
+      }
+    });
+
+    const result = injection?.result;
+    if (!result?.ok) throw new Error(result?.error || "上传附件失败");
+    message(`已把 ${result.filename} 设置到页面附件控件，请在官网页面复核。`, "success");
+  } catch (error) {
+    message(error.message, "error");
+  } finally {
+    setBusy(button, false, "");
+  }
+}
+
 async function loadAgent() {
   try {
     const [health, sessions, capabilities] = await Promise.all([
@@ -635,6 +735,7 @@ $("#auth-consent-approval").addEventListener("change", refreshAuthButton);
 $("#auth-submit-approval").addEventListener("change", refreshAuthButton);
 $("#auth-dialog").addEventListener("close", clearAuthSensitive);
 $("#export-word-button").addEventListener("click", exportWordResume);
+$("#upload-resume-button").addEventListener("click", uploadResumeAttachment);
 (async () => {
   await Promise.allSettled([loadAgent(), refreshPermissionStatus()]);
   await consumePendingTakeover();
