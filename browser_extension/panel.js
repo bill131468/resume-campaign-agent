@@ -32,6 +32,57 @@ async function api(path, options = {}) {
   return response.json();
 }
 
+// ─── 新增：下载 blob 文件 ───
+async function downloadBlob(path, payload) {
+  const response = await fetch(`${API}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  if (!response.ok) {
+    let detail = `HTTP ${response.status}`;
+    try { detail = (await response.json()).detail || detail; } catch (_) {}
+    throw new Error(detail);
+  }
+  return response.blob();
+}
+
+// ─── 新增：安全文件名 ───
+function safeFilenamePart(value, fallback) {
+  return String(value || fallback).trim().replace(/[\\/:*?"<>|]+/g, "_");
+}
+
+// ─── 新增：导出 Word 简历 ───
+async function exportWordResume() {
+  const button = $("#export-word-button");
+  const sessionId = $("#session-select").value;
+  if (!sessionId) return message("请先选择一份简历会话。", "error");
+
+  setBusy(button, true, "正在导出...");
+  try {
+    const session = await api(`/api/sessions/${encodeURIComponent(sessionId)}`);
+    const profile = session.resume;
+    const company = currentHandoff?.company || "未指定公司";
+    const position = currentHandoff?.jobTitle || currentHandoff?.channelLabel || "未指定职位";
+
+    const blob = await downloadBlob("/api/export/resume/word", { profile, company, position });
+    const filename = `${safeFilenamePart(profile.full_name, "候选人")}_${safeFilenamePart(company, "公司")}_${safeFilenamePart(position, "职位")}.docx`;
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
+
+    message(`已导出 ${filename}`, "success");
+  } catch (error) {
+    message(error.message, "error");
+  } finally {
+    setBusy(button, false, "");
+  }
+}
+
 async function loadAgent() {
   try {
     const [health, sessions, capabilities] = await Promise.all([
@@ -584,6 +635,7 @@ $("#auth-otp").addEventListener("input", refreshAuthButton);
 $("#auth-consent-approval").addEventListener("change", refreshAuthButton);
 $("#auth-submit-approval").addEventListener("change", refreshAuthButton);
 $("#auth-dialog").addEventListener("close", clearAuthSensitive);
+$("#export-word-button").addEventListener("click", exportWordResume);
 (async () => {
   await Promise.allSettled([loadAgent(), refreshPermissionStatus()]);
   await consumePendingTakeover();
