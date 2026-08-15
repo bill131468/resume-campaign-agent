@@ -638,8 +638,26 @@ async function runAutonomousApplication(handoff) {
   renderPlan(plan);
   const tab = await activeTab();
   if (tab.id !== handoff.tabId) throw new Error("投递标签页已变化");
-  const fillResponse = await chrome.tabs.sendMessage(tab.id, { type: "RC_APPLY_PLAN", actions: plan.actions });
+    const fillResponse = await chrome.tabs.sendMessage(tab.id, { type: "RC_APPLY_PLAN", actions: plan.actions });
   if (!fillResponse?.ok) throw new Error("官网拒绝 AI 填表");
+
+  // ─── 自动导出 Word 并上传附件 ───
+  try {
+    const { filled } = fillResponse.result;
+    if (filled.length > 0) {
+      const result = await exportWordResume();
+      if (result) {
+        const { blob, filename } = result;
+        const uploadResult = await autoUploadResume(blob, filename);
+        if (!uploadResult.success) {
+          message("简历已生成，但自动上传未完成，请手动上传。", "");
+        }
+      }
+    }
+  } catch (error) {
+    message(`自动导出/上传跳过：${error.message}`, "");
+  }
+
   const inspection = await chrome.tabs.sendMessage(tab.id, { type: "RC_INSPECT_SUBMISSION" });
   if (!inspection?.ok) throw new Error("无法执行投递前检查");
   const state = inspection.submission;
