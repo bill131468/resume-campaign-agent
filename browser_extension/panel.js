@@ -53,9 +53,12 @@ function safeFilenamePart(value, fallback) {
 async function exportWordResume() {
   const button = $("#export-word-button");
   const sessionId = $("#session-select").value;
-  if (!sessionId) return message("请先选择一份简历会话。", "error");
+  if (!sessionId) {
+    message("请先选择一份简历会话。", "error");
+    return null;
+  }
 
-  setBusy(button, true, "正在导出...");
+  setBusy(button, true, "正在生成简历...");
   try {
     const session = await api(`/api/sessions/${encodeURIComponent(sessionId)}`);
     const profile = session.resume;
@@ -65,19 +68,104 @@ async function exportWordResume() {
     const blob = await downloadBlob("/api/export/resume/word", { profile, company, position });
     const filename = `${safeFilenamePart(profile.full_name, "候选人")}_${safeFilenamePart(company, "公司")}_${safeFilenamePart(position, "职位")}.docx`;
 
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = filename;
-    link.click();
-    URL.revokeObjectURL(url);
-
-    message(`已导出 ${filename}`, "success");
+    message(`简历已生成：${filename}`, "success");
+    return { blob, filename };
   } catch (error) {
     message(error.message, "error");
+    throw error;
   } finally {
     setBusy(button, false, "");
   }
+}
+
+async function autoUploadResume(blob, filename) {
+  if (!blob) return { success: false, error: "no blob" };
+
+  const arrayBuffer = await blob.arrayBuffer();
+  const bytes = new Uint8Array(arrayBuffer);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  const base64 = btoa(binary);
+
+  const tab = await activeTab();
+  const [injection] = await chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    func: async ({ blobData, blobType, fileName }) => {
+      const binary = atob(blobData);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], { type: blobType });
+      const file = new File([blob], fileName, { type: blobType });
+
+      const clean = (value) => String(value || "").replace(/\s+/g, " ").trim();
+      const visible = (element) => Boolean(element && element.getClientRects().length);
+
+      const fileInputs = Array.from(document.querySelectorAll('input[type="file"]'))
+        .filter((element) => !element.disabled && !element.readOnly);
+
+      if (!fileInputs.length) {
+        return { ok: false, error: "当前页面没有找到可用的附件上传控件" };
+      }
+
+      const scoreFileInput = (element) => {
+        const container = element.closest("label, .el-form-item, .ant-form-item, .form-item, [class*='upload' i], [class*='form' i]");
+        const text = [
+          element.accept, element.name, element.id,
+          element.getAttribute("aria-label"), element.getAttribute("placeholder"),
+          container?.innerText, container?.textContent
+        ].map(clean).join(" ").toLowerCase();
+
+        let score = visible(element) ? 10 : 0;
+        if (text.includes("简历") || text.includes("resume")) score += 50;
+        if (text.includes("附件") || text.includes("上传") || text.includes("upload")) score += 30;
+        if (text.includes(".doc") || text.includes("word")) score += 20;
+        if (text.includes("头像") || text.includes("photo") || text.includes("image")) score -= 50;
+        return score;
+      };
+
+      const targetInput = fileInputs
+        .map((element) => ({ element, score: scoreFileInput(element) }))
+        .sort((a, b) => b.score - a.score)[0]?.element;
+
+      if (!targetInput) {
+        return { ok: false, error: "未找到可用的简历附件上传控件" };
+      }
+
+      try {
+        const transfer = new DataTransfer();
+        transfer.items.add(file);
+        targetInput.files = transfer.files;
+        targetInput.dispatchEvent(new Event("input", { bubbles: true }));
+        targetInput.dispatchEvent(new Event("change", { bubbles: true }));
+        return { ok: true, filename: fileName };
+      } catch (error) {
+        return { ok: false, error: error.message || "浏览器拒绝设置附件文件" };
+      }
+    },
+    args: [{ blobData: base64, blobType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", fileName: filename }]
+  });
+
+  const result = injection?.result;
+  if (!result?.ok) {
+    message(result?.error || "上传附件失败", "error");
+    return { success: false, error: result?.error };
+  }
+
+  message(`已自动上传 ${result.filename} 到官网附件区，请复核。`, "success");
+  return { success: true, filename: result.filename };
+}
+
+function showUploadConfirm(filename) {
+  $("#upload-confirm-text").textContent = `简历已生成：${filename}。是否自动上传到官网附件区？`;
+  $("#upload-confirm-bar").hidden = false;
+}
+
+function hideUploadConfirm() {
+  $("#upload-confirm-bar").hidden = true;
 }
 
 async function uploadResumeAttachment() {
@@ -697,7 +785,16 @@ async function fill() {
     const response = await chrome.tabs.sendMessage(tab.id, { type: "RC_APPLY_PLAN", actions: currentPlan.actions });
     if (!response?.ok) throw new Error("页面拒绝填入");
     const { filled, skipped } = response.result;
-    message(`已填入 ${filled.length} 项，现场跳过 ${skipped.length} 项。请人工复核；没有提交。`, "success");
+        message(`已填入 ${filled.length} 项，现场跳过 ${skipped.length} 项。请人工复核；没有提交。`, "success");
+    if (filled.length > 0) {
+      const result = await exportWordResume();
+      if (result) {
+        const { blob, filename } = result;
+        showUploadConfirm(filename);
+        window.__pendingResumeUpload = { blob, filename };
+        return;
+      }
+    }
   } catch (error) {
     message(error.message, "error");
   } finally {
@@ -734,8 +831,32 @@ $("#auth-otp").addEventListener("input", refreshAuthButton);
 $("#auth-consent-approval").addEventListener("change", refreshAuthButton);
 $("#auth-submit-approval").addEventListener("change", refreshAuthButton);
 $("#auth-dialog").addEventListener("close", clearAuthSensitive);
-$("#export-word-button").addEventListener("click", exportWordResume);
+$("#export-word-button").addEventListener("click", async () => {
+  const result = await exportWordResume();
+  if (result) {
+    const { blob, filename } = result;
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
+    message(`已下载 ${filename}`, "success");
+  }
+});
 $("#upload-resume-button").addEventListener("click", uploadResumeAttachment);
+$("#upload-confirm-yes").addEventListener("click", async () => {
+  hideUploadConfirm();
+  const pending = window.__pendingResumeUpload;
+  if (pending) {
+    await autoUploadResume(pending.blob, pending.filename);
+    window.__pendingResumeUpload = null;
+  }
+});
+$("#upload-confirm-no").addEventListener("click", () => {
+  hideUploadConfirm();
+  message("已跳过上传简历附件；请在官网页面人工复核。", "");
+});
 (async () => {
   await Promise.allSettled([loadAgent(), refreshPermissionStatus()]);
   await consumePendingTakeover();
