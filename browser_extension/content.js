@@ -20,7 +20,7 @@
     return String(value || "").replace(/\s+/g, " ").trim().slice(0, limit);
   }
 
-  function getLabel(element) {
+    function getLabel(element) {
     const direct = Array.from(element.labels || []).map((label) => label.innerText).join(" ");
     if (clean(direct)) return clean(direct);
     const aria = element.getAttribute("aria-label");
@@ -41,6 +41,15 @@
     }
     const preceding = element.previousElementSibling;
     if (preceding && /^(LABEL|SPAN|DIV|P|LEGEND)$/.test(preceding.tagName)) return clean(preceding.innerText);
+
+    // 新增：向上查找父容器文字（字节跳动等自研组件）
+    let ancestor = element.parentElement;
+    for (let depth = 0; depth < 5 && ancestor; depth++) {
+      const text = clean(ancestor.innerText);
+      if (text && text.length <= 200) return text.slice(0, 120);
+      ancestor = ancestor.parentElement;
+    }
+
     return "";
   }
 
