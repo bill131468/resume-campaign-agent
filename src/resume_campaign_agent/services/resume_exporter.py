@@ -1,6 +1,7 @@
-"""简历导出服务 - 生成 Word 格式的简历文件"""
+"""简历导出服务 - 生成 Word 和 PDF 格式的简历文件"""
 
 from io import BytesIO
+from datetime import datetime
 from docx import Document
 from docx.shared import Inches, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -8,7 +9,7 @@ from docx.oxml.ns import qn
 
 
 class ResumeExporter:
-    """将简历数据导出为格式化的 Word 文档"""
+    """将简历数据导出为格式化的 Word/PDF 文档"""
 
     def __init__(self):
         self.doc = Document()
@@ -70,7 +71,6 @@ class ResumeExporter:
             value_cell = table.cell(row, col + 1)
             label_cell.text = label
             value_cell.text = str(value) if value else ""
-            # 设置标签列宽度
             label_cell.width = Inches(1.2)
             value_cell.width = Inches(2.2)
 
@@ -105,7 +105,6 @@ class ResumeExporter:
                 degree_major += f"（辅修：{edu['minor']}）"
             p.add_run(degree_major)
 
-            # 时间
             date_str = ""
             if edu.get("start_date") and edu.get("end_date"):
                 date_str = f"{edu['start_date']} - {edu['end_date']}"
@@ -114,16 +113,13 @@ class ResumeExporter:
             if date_str:
                 p.add_run(f"\n{date_str}").italic = True
 
-            # GPA
             if edu.get("gpa") is not None:
                 scale = f"/{edu['gpa_scale']}" if edu.get("gpa_scale") else ""
                 p.add_run(f"  |  GPA：{edu['gpa']}{scale}")
 
-            # 排名
             if edu.get("rank"):
                 p.add_run(f"  |  排名：{edu['rank']}")
 
-            # 核心课程
             if edu.get("core_courses"):
                 p.add_run(f"\n核心课程：{'、'.join(edu['core_courses'])}")
 
@@ -136,14 +132,12 @@ class ResumeExporter:
 
         self._add_section_heading("工作经历")
         for exp in work_list:
-            # 公司和职位
             p = self.doc.add_paragraph()
             run_company = p.add_run(exp.get("company", ""))
             run_company.bold = True
             run_company.font.size = Pt(11)
             p.add_run(f"  |  {exp.get('title', '')}")
 
-            # 时间和地点
             meta = []
             if exp.get("start_date"):
                 end = str(exp["end_date"]) if exp.get("end_date") else "至今"
@@ -155,7 +149,6 @@ class ResumeExporter:
             if meta:
                 p.add_run(f"\n{'  |  '.join(meta)}").italic = True
 
-            # 工作类型
             if exp.get("experience_type"):
                 type_map = {
                     "full_time": "全职", "part_time": "兼职", "internship": "实习",
@@ -163,13 +156,11 @@ class ResumeExporter:
                 }
                 p.add_run(f"  |  {type_map.get(exp['experience_type'], exp['experience_type'])}")
 
-            # 职责
             if exp.get("responsibilities"):
                 p_resp = self.doc.add_paragraph()
                 p_resp.add_run("主要职责：").bold = True
                 p_resp.add_run(exp["responsibilities"])
 
-            # 亮点
             if exp.get("highlights"):
                 for highlight in exp["highlights"]:
                     self.doc.add_paragraph(highlight, style='List Bullet')
@@ -291,22 +282,10 @@ class ResumeExporter:
             self.doc.add_paragraph()
 
     def export(self, profile: dict, company: str = "", position: str = "") -> BytesIO:
-        """
-        导出简历为 Word 文档
-
-        Args:
-            profile: ResumeProfile 模型的数据字典
-            company: 目标公司名称（可选，用于文件名）
-            position: 目标职位名称（可选，用于文件名）
-
-        Returns:
-            BytesIO: Word 文档的字节流
-        """
-        # 重置文档
+        """导出简历为 Word 文档"""
         self.doc = Document()
         self._setup_styles()
 
-        # === 标题 ===
         full_name = profile.get("full_name") or profile.get("preferred_name") or "个人简历"
         title_text = full_name
         if company or position:
@@ -323,7 +302,6 @@ class ResumeExporter:
 
         self.doc.add_paragraph()
 
-        # === 各模块 ===
         self._add_basic_info(profile)
         self._add_professional_summary(profile)
         self._add_education(profile.get("education", []))
@@ -336,8 +314,91 @@ class ResumeExporter:
         self._add_campus(profile.get("campus_experience", []))
         self._add_self_evaluation(profile)
 
-        # 保存到内存
+        self.doc.core_properties.title = f"{full_name} 个人简历"
+        self.doc.core_properties.author = full_name
+        self.doc.core_properties.subject = "个人简历"
+        self.doc.core_properties.keywords = "简历,求职,个人简历"
+        self.doc.core_properties.comments = "由 Resume Campaign Agent 自动生成"
+        self.doc.core_properties.category = "简历"
+        self.doc.core_properties.language = "zh-CN"
+        self.doc.core_properties.identifier = f"resume-{full_name}"
+        self.doc.core_properties.created = datetime.now()
+        self.doc.core_properties.modified = datetime.now()
+
         buffer = BytesIO()
         self.doc.save(buffer)
+        buffer.seek(0)
+        return buffer
+
+    def _build_resume_html(self, profile: dict, full_name: str) -> str:
+        """构建简历 HTML"""
+        html = f"""<html><head><meta charset="utf-8"><style>
+body {{ font-family: 'Microsoft YaHei', sans-serif; font-size: 14px; margin: 40px; }}
+h1 {{ text-align: center; color: #003366; font-size: 24px; }}
+h2 {{ color: #003366; border-bottom: 1px solid #ccc; padding-bottom: 4px; font-size: 18px; }}
+table {{ border-collapse: collapse; width: 100%; margin: 10px 0; }}
+td {{ border: 1px solid #ccc; padding: 8px; }}
+p {{ line-height: 1.6; }}
+</style></head><body>
+<h1>{full_name} - 个人简历</h1>
+<h2>基本信息</h2>
+<table>
+<tr><td><b>姓名</b></td><td>{profile.get("full_name", "")}</td><td><b>手机</b></td><td>{profile.get("phone", "")}</td></tr>
+<tr><td><b>邮箱</b></td><td>{profile.get("email", "")}</td><td><b>城市</b></td><td>{profile.get("city", "")}</td></tr>
+</table>
+"""
+        if profile.get("summary"):
+            html += f"<h2>个人总结</h2><p>{profile['summary']}</p>"
+
+        if profile.get("education"):
+            html += "<h2>教育经历</h2>"
+            for edu in profile["education"]:
+                html += f"<p><b>{edu.get('school', '')}</b> | {edu.get('degree', '')} · {edu.get('major', '')} | {edu.get('graduation_year', '')}</p>"
+
+        if profile.get("work_experience"):
+            html += "<h2>工作经历</h2>"
+            for exp in profile["work_experience"]:
+                html += f"<p><b>{exp.get('company', '')}</b> | {exp.get('title', '')}</p>"
+                if exp.get("responsibilities"):
+                    html += f"<p>{exp['responsibilities']}</p>"
+                if exp.get("highlights"):
+                    for h in exp["highlights"]:
+                        html += f"<p>• {h}</p>"
+
+        if profile.get("projects"):
+            html += "<h2>项目经历</h2>"
+            for proj in profile["projects"]:
+                html += f"<p><b>{proj.get('name', '')}</b> | {proj.get('role', '')}</p>"
+                html += f"<p>{proj.get('description', '')}</p>"
+
+        if profile.get("skills"):
+            html += "<h2>专业技能</h2>"
+            html += f"<p>{'、'.join(profile['skills'])}</p>"
+
+        if profile.get("certificates"):
+            html += "<h2>证书与资质</h2>"
+            for cert in profile["certificates"]:
+                html += f"<p>{cert.get('name', '')}</p>"
+
+        if profile.get("self_evaluation"):
+            html += f"<h2>自我评价</h2><p>{profile['self_evaluation']}</p>"
+
+        html += "</body></html>"
+        return html
+
+    async def export_html_to_pdf(self, profile: dict, company: str = "", position: str = "") -> BytesIO:
+        """生成 PDF 简历（腾讯等平台兼容）"""
+        full_name = profile.get("full_name") or profile.get("preferred_name") or "个人简历"
+        html = self._build_resume_html(profile, full_name)
+
+        from playwright.async_api import async_playwright
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True)
+            page = await browser.new_page()
+            await page.set_content(html, wait_until="networkidle")
+            pdf_bytes = await page.pdf(format="A4")
+            await browser.close()
+
+        buffer = BytesIO(pdf_bytes)
         buffer.seek(0)
         return buffer

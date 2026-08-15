@@ -142,7 +142,7 @@ def create_app(
         position = request.get("position", "")
 
         exporter = ResumeExporter()
-        buffer = exporter.export(profile, company, position)
+        buffer = await exporter.export_html_to_pdf(profile, company, position)
 
         full_name = profile.get("full_name") or profile.get("preferred_name") or "简历"
         filename_parts = [full_name]
@@ -150,14 +150,14 @@ def create_app(
             filename_parts.append(company)
         if position:
             filename_parts.append(position)
-        filename_parts.append("简历.docx")
+        filename_parts.append("简历.pdf")
         filename = "_".join(filename_parts)
 
         encoded_filename = quote(filename)
 
         return StreamingResponse(
             buffer,
-            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            media_type="application/pdf",
             headers={
                 "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_filename}"
             }

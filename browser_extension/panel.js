@@ -66,7 +66,7 @@ async function exportWordResume() {
     const position = currentHandoff?.jobTitle || currentHandoff?.channelLabel || "未指定职位";
 
     const blob = await downloadBlob("/api/export/resume/word", { profile, company, position });
-    const filename = `${safeFilenamePart(profile.full_name, "候选人")}_${safeFilenamePart(company, "公司")}_${safeFilenamePart(position, "职位")}.docx`;
+    const filename = `${safeFilenamePart(profile.full_name, "候选人")}_${safeFilenamePart(company, "公司")}_${safeFilenamePart(position, "职位")}.pdf`;
 
     message(`简历已生成：${filename}`, "success");
     return { blob, filename };
@@ -120,8 +120,10 @@ async function autoUploadResume(blob, filename) {
         ].map(clean).join(" ").toLowerCase();
 
         let score = visible(element) ? 10 : 0;
-        if (text.includes("简历") || text.includes("resume")) score += 50;
+        if (text.includes("简历") || text.includes("resume")) score += 200;
+        if (text.includes("自动解析") || text.includes("拖拽至此区域自动解析")) score += 100;
         if (text.includes("附件") || text.includes("上传") || text.includes("upload")) score += 30;
+        if (text.includes("作品") || text.includes("作品集") || text.includes("portfolio")) score -= 100;
         if (text.includes(".doc") || text.includes("word")) score += 20;
         if (text.includes("头像") || text.includes("photo") || text.includes("image")) score -= 50;
         return score;
@@ -146,7 +148,7 @@ async function autoUploadResume(blob, filename) {
         return { ok: false, error: error.message || "浏览器拒绝设置附件文件" };
       }
     },
-    args: [{ blobData: base64, blobType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", fileName: filename }]
+    args: [{ blobData: base64, blobType: "application/pdf", fileName: filename }]
   });
 
   const result = injection?.result;
@@ -203,10 +205,12 @@ async function uploadResumeAttachment() {
           ].map(clean).join(" ").toLowerCase();
 
           let score = visible(element) ? 10 : 0;
-          if (text.includes("简历") || text.includes("resume")) score += 50;
+          if (text.includes("简历") || text.includes("resume")) score += 200;
+          if (text.includes("自动解析") || text.includes("拖拽至此")) score += 100;
           if (text.includes("附件") || text.includes("上传") || text.includes("upload")) score += 30;
-          if (text.includes(".doc") || text.includes("word")) score += 20;
+          if (text.includes(".doc") || text.includes("word") || text.includes("pdf")) score += 20;
           if (text.includes("头像") || text.includes("photo") || text.includes("image")) score -= 50;
+          if (text.includes("作品") || text.includes("作品集") || text.includes("portfolio")) score -= 100;
           return score;
         };
 
@@ -221,7 +225,7 @@ async function uploadResumeAttachment() {
         return await new Promise((resolve) => {
           const picker = document.createElement("input");
           picker.type = "file";
-          picker.accept = ".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+          picker.accept = ".doc,.docx,.pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/pdf";
           picker.style.position = "fixed";
           picker.style.left = "-9999px";
           picker.style.top = "-9999px";
@@ -236,10 +240,10 @@ async function uploadResumeAttachment() {
               return;
             }
 
-            if (!/\.docx?$/i.test(file.name)) {
-              resolve({ ok: false, error: "请选择 Word 简历文件（.doc 或 .docx）" });
-              return;
-            }
+            if (!/\.(doc|docx|pdf)$/i.test(file.name)) {
+  resolve({ ok: false, error: "请选择简历文件（.doc、.docx 或 .pdf）" });
+  return;
+}
 
             try {
               const transfer = new DataTransfer();
