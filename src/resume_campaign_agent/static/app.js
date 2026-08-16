@@ -256,7 +256,7 @@ window.addEventListener("message",event=>{
     pending.button.textContent=pending.simulationOnly?"AI 官网预演中":"AI 已接管";
     showToast(pending.simulationOnly
       ?"合成档案已进入官网安全预演：只核岗并前往登录/申请页，不发送验证码、不填表、不提交"
-      :"官网已交给 AI；将先核验在招岗位，再进入登录或申请页");
+      :"招聘网站已打开。请您先登录并进入要投递的岗位，等到出现需要填写简历信息的页面时，再点击浏览器右上角的扩展图标打开副驾驶。");
   }else{
     pending.button.disabled=false; pending.button.textContent="AI 核岗 · 接管官网";
     showToast(event.data.error||"浏览器副驾驶未能接管");

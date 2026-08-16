@@ -16,6 +16,17 @@
     const maxRetries = 3;
 
     const trySend = () => {
+      if (!chrome?.runtime?.sendMessage) {
+        window.postMessage({
+          source: "resume-campaign-extension",
+          type: "RC_AI_TAKEOVER_ACK",
+          requestId: data.requestId,
+          ok: false,
+          error: "扩展上下文未就绪，请重新加载扩展"
+        }, event.origin);
+        return;
+      }
+
       chrome.runtime.sendMessage(
         { type: "RC_START_AI_TAKEOVER", requestId: data.requestId, payload: data.payload },
         (response) => {

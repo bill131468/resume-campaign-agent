@@ -22,7 +22,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["bridge.js", "panel.html", "panel.js"],
+      "resources": ["panel.html", "panel.js"],
       "matches": ["http://127.0.0.1:18010/*"]
     }
   ]

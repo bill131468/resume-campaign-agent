@@ -439,7 +439,7 @@ function refreshAuthButton() {
 function setTakeoverStatus(text, kind = "neutral") {
   $("#takeover-status").textContent = text;
   const badge = $("#takeover-badge");
-  badge.textContent = kind === "granted" ? "AI 接管中" : kind === "error" ? "已停止" : "等待任务";
+  badge.textContent = kind === "granted" ? "AI 接管中" : kind === "error" ? "已停止" : "请先打开副驾驶";
   badge.className = `badge ${kind === "granted" ? "granted" : kind === "error" ? "temporary" : "neutral"}`;
 }
 
