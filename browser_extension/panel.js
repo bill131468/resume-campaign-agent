@@ -27,6 +27,12 @@ async function api(path, options = {}) {
   if (!response.ok) {
     let detail = `HTTP ${response.status}`;
     try { detail = (await response.json()).detail || detail; } catch (_) {}
+    if (response.status === 500) {
+      throw new Error("后端服务出错了。请确认已启动服务：python -m resume_campaign_agent");
+    }
+    if (response.status === 422) {
+      throw new Error("简历信息不完整或格式有误，请检查必填字段。");
+    }
     throw new Error(detail);
   }
   return response.json();
@@ -41,6 +47,9 @@ async function downloadBlob(path, payload) {
   if (!response.ok) {
     let detail = `HTTP ${response.status}`;
     try { detail = (await response.json()).detail || detail; } catch (_) {}
+    if (response.status === 500) {
+      throw new Error("后端服务出错了。请确认已启动服务：python -m resume_campaign_agent");
+    }
     throw new Error(detail);
   }
   return response.blob();

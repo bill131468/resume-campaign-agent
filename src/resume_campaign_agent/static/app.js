@@ -230,7 +230,7 @@ function startAiTakeover(lead,index){
   const requestId=crypto.randomUUID();
   pendingTakeovers.set(requestId,{button,simulationOnly,timer:setTimeout(()=>{
     pendingTakeovers.delete(requestId); button.disabled=false; button.textContent="AI 核岗 · 接管官网";
-    showToast("未检测到浏览器副驾驶，请确认已加载并重新加载扩展 v0.7.1");
+        showToast("未检测到浏览器副驾驶。请在浏览器右上角点击扩展图标，确认副驾驶已加载后重试。");
   },4000)});
   window.postMessage({
     source:"resume-campaign-app",
