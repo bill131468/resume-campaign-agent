@@ -407,6 +407,7 @@ class BrowserAssistant:
                     "placeholder": field.placeholder,
                     "name": field.name,
                     "options": [option.label for option in field.options[:30]],
+                    "context": getattr(field, "context", "") or "",
                 }
                 for field in unmatched
             ]

@@ -16,7 +16,7 @@ window.__EXTENSION_ID__ = "dgoeflcdbfknpgpdehcfjijnkmifkgde";
 const $ = (selector) => document.querySelector(selector);
 
 let currentDiscovery = null;
-let currentSessionId = null;
+let currentSessionId = localStorage.getItem("lastSessionId") || null;
 let currentReview = null;
 let currentOptimization = null;
 const careerState = { sessionId: null, dossier: null, versionId: null, applicationId: null, interviewKit: null };
@@ -94,6 +94,7 @@ async function runDiscovery(){
     const resume=collectResume(); renderMissing(localMissing(resume));
     const session=await requestJson("/api/sessions",{method:"POST",body:JSON.stringify({resume,preferred_locations:resume.base_locations,remote_preference:"any"})});
     currentSessionId=session.id;
+    localStorage.setItem("lastSessionId", session.id);
     const result=await requestJson("/api/discovery/enterprises",{method:"POST",body:JSON.stringify({
       session_id:session.id,base_locations:resume.base_locations,professional_directions:resume.target_roles,industries:resume.target_industries,
       employer_types:resume.target_employer_types,company_keywords:splitValues(value("companyKeywords")),limit:20,ai_ranking:true
@@ -468,3 +469,29 @@ $("#portalActionButton").addEventListener("click",loadPortalTemplate);
 $("#portalLinkButton").addEventListener("click",jumpPortal); $("#portalJumpButton").addEventListener("click",jumpPortal);
 checkHealth(); loadPortalTemplate();
 const careerDeadline=new Date();careerDeadline.setDate(careerDeadline.getDate()+14);$("#careerDeadline").value=careerDeadline.toISOString().slice(0,10);
+
+async function restoreLastSession() {
+  const sessionId = localStorage.getItem("lastSessionId");
+  if (!sessionId) return;
+
+  try {
+    const session = await requestJson(`/api/sessions/${sessionId}`);
+    const resume = session.resume;
+
+    setField("fullName", resume.full_name);
+    setField("email", resume.email);
+    setField("phone", resume.phone);
+    setField("city", resume.city);
+    setField("targetRoles", (resume.target_roles || []).join(","));
+    setField("baseLocations", (resume.base_locations || []).join(","));
+    setField("skills", (resume.skills || []).join(","));
+    setField("summary", resume.summary);
+
+    currentSessionId = sessionId;
+    showToast("已恢复上次简历会话", "success");
+  } catch (error) {
+    // 会话不存在时静默忽略
+  }
+}
+
+setTimeout(restoreLastSession, 500);

@@ -44,11 +44,16 @@
 
     // 新增：向上查找父容器文字（字节跳动等自研组件）
     let ancestor = element.parentElement;
-    for (let depth = 0; depth < 5 && ancestor; depth++) {
+    let bestText = "";
+    for (let depth = 0; depth < 10 && ancestor; depth++) {
       const text = clean(ancestor.innerText);
-      if (text && text.length <= 200) return text.slice(0, 120);
+      // 只保存短文本（长文本是容器说明，短文本更可能是字段 label）
+      if (text && text.length <= 100) {
+        bestText = text.slice(0, 80);
+      }
       ancestor = ancestor.parentElement;
     }
+    if (bestText) return bestText;
 
     return "";
   }
@@ -78,7 +83,8 @@
             ? Array.from(element.options).slice(0, 200).map((option) => ({
                 value: clean(option.value, 300), label: clean(option.textContent, 300)
               }))
-            : []
+            : []          ,
+          context: clean(element.parentElement?.parentElement?.innerText || element.parentElement?.innerText || "", 500)
         };
         field.signature = signature(field);
         return field;

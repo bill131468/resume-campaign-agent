@@ -32,3 +32,4 @@ submission_screenshots/
 *.docx
 test_download.py
 test_submit.py
+data/

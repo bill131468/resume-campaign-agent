@@ -58,22 +58,38 @@ async function startTakeover(message, sender) {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message?.type === "RC_START_AI_TAKEOVER") {
-    startTakeover(message, sender)
-      .then((result) => sendResponse({ ok: true, ...result }))
-      .catch((error) => sendResponse({ ok: false, error: error.message || "AI 接管失败" }));
+    try {
+      startTakeover(message, sender)
+        .then((result) => {
+          try { sendResponse({ ok: true, ...result }); } catch (_) {}
+        })
+        .catch((error) => {
+          try { sendResponse({ ok: false, error: error.message || "AI 接管失败" }); } catch (_) {}
+        });
+    } catch (error) {
+      try { sendResponse({ ok: false, error: error.message || "AI 接管失败" }); } catch (_) {}
+    }
     return true;
   }
   if (message?.type === "RC_GET_AI_TAKEOVER") {
     const tabId = Number(message.tabId);
     chrome.storage.session.get(handoffKey(tabId))
-      .then((result) => sendResponse({ ok: true, handoff: result[handoffKey(tabId)] || null }))
-      .catch((error) => sendResponse({ ok: false, error: error.message }));
+      .then((result) => {
+        try { sendResponse({ ok: true, handoff: result[handoffKey(tabId)] || null }); } catch (_) {}
+      })
+      .catch((error) => {
+        try { sendResponse({ ok: false, error: error.message }); } catch (_) {}
+      });
     return true;
   }
   if (message?.type === "RC_FINISH_AI_TAKEOVER") {
     chrome.storage.session.remove(handoffKey(Number(message.tabId)))
-      .then(() => sendResponse({ ok: true }))
-      .catch((error) => sendResponse({ ok: false, error: error.message }));
+      .then(() => {
+        try { sendResponse({ ok: true }); } catch (_) {}
+      })
+      .catch((error) => {
+        try { sendResponse({ ok: false, error: error.message }); } catch (_) {}
+      });
     return true;
   }
   return undefined;

@@ -533,6 +533,7 @@ class BrowserFormField(BaseModel):
     required: bool = False
     max_length: int | None = Field(default=None, ge=-1, le=100000)
     options: list[BrowserFormOption] = Field(default_factory=list, max_length=200)
+    context: str = Field(default="", max_length=500)
 
 
 class BrowserPageSnapshot(BaseModel):
