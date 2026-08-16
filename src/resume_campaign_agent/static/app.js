@@ -66,6 +66,20 @@ function localMissing(resume) {
   return rules.filter(([, , ok])=>!ok).map(([field,label])=>({field,label,reason:"通用简历或中国网申常用必填项"}));
 }
 
+function renderCompletenessNotice(resume) {
+  const missing = localMissing(resume);
+  const noticeEl = $("#completenessNotice");
+  if (!noticeEl) return;
+
+  if (missing.length === 0) {
+    noticeEl.textContent = "✅ 简历信息完整，自动填表效果最佳";
+    noticeEl.className = "completeness-notice is-complete";
+  } else {
+    noticeEl.textContent = `⚠️ 简历还有 ${missing.length} 项未填，建议补齐后再投递，自动填表效果更好`;
+    noticeEl.className = "completeness-notice is-incomplete";
+  }
+}
+
 async function requestJson(url, options={}) {
   const response = await fetch(url,{...options,headers:{"Content-Type":"application/json",...(options.headers||{})}});
   const body = await response.json().catch(()=>({}));
@@ -91,7 +105,7 @@ function setLoading(on){
 async function runDiscovery(){
   setLoading(true);
   try {
-    const resume=collectResume(); renderMissing(localMissing(resume));
+    const resume=collectResume(); renderMissing(localMissing(resume)); renderCompletenessNotice(resume);
     const session=await requestJson("/api/sessions",{method:"POST",body:JSON.stringify({resume,preferred_locations:resume.base_locations,remote_preference:"any"})});
     currentSessionId=session.id;
     localStorage.setItem("lastSessionId", session.id);
@@ -302,7 +316,7 @@ function careerInput(){
 
 async function ensureCareerSession(force=false){
   if(careerState.sessionId&&!force)return careerState.sessionId;
-  const resume=collectResume(); renderMissing(localMissing(resume));
+  const resume=collectResume(); renderMissing(localMissing(resume)); renderCompletenessNotice(resume);
   const session=await requestJson("/api/sessions",{method:"POST",body:JSON.stringify({resume,preferred_locations:resume.base_locations,remote_preference:"any"})});
   careerState.sessionId=session.id;
   if(force){careerState.versionId=null;careerState.applicationId=null;}
