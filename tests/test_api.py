@@ -164,12 +164,34 @@ def test_frontend_is_served_with_ai_takeover_language(client):
     assert "求职驾驶舱" in response.text
     assert "事实证据库与敏感信息保险箱" in response.text
     assert client.get("/styles.css").status_code == 200
+    assert '/app-utils.js?v=1' in response.text
+    app_utils = client.get("/app-utils.js")
+    assert app_utils.status_code == 200
+    assert "describeApiError" in app_utils.text
     app = client.get("/app.js")
     assert app.status_code == 200
     assert 'requestJson("/api/resume/review"' in app.text
     assert 'requestJson("/api/resume/optimize"' in app.text
     assert 'requestJson("/api/career/job-dossier"' in app.text
     assert 'requestJson("/api/career/portal-preflight"' in app.text
+
+
+def test_incomplete_work_experience_returns_actionable_field_paths(client):
+    response = client.post(
+        "/api/sessions",
+        json={
+            "resume": {
+                "work_experience": [
+                    {"company": "合成公司", "title": "", "start_date": ""}
+                ]
+            }
+        },
+    )
+
+    assert response.status_code == 422
+    locations = {tuple(item["loc"]) for item in response.json()["detail"]}
+    assert ("body", "resume", "work_experience", 0, "title") in locations
+    assert ("body", "resume", "work_experience", 0, "start_date") in locations
 
 
 def test_boc_template_separates_sensitive_portal_fields(client):

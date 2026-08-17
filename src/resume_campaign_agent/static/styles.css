@@ -121,6 +121,8 @@ input, textarea, select {
 textarea { resize: vertical; min-height: 70px; }
 input:hover, textarea:hover, select:hover { border-color: var(--rule-strong); }
 input:focus, textarea:focus, select:focus { border-color: var(--archive); background: white; outline: none; box-shadow: 0 0 0 2px var(--archive-quiet); }
+input.is-invalid, textarea.is-invalid, select.is-invalid { border-color: var(--red-stamp); background: #fff8f5; }
+input.is-invalid:focus, textarea.is-invalid:focus, select.is-invalid:focus { box-shadow: 0 0 0 2px color-mix(in srgb, var(--red-stamp) 18%, transparent); }
 .form-section { border-bottom: 1px solid var(--rule); }
 .form-section summary { cursor: pointer; padding: 17px 0; font-size: 12px; font-weight: 650; letter-spacing: .04em; list-style: none; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
 .form-section summary::-webkit-details-marker { display: none; }

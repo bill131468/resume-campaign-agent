@@ -14,6 +14,8 @@ window.__EXTENSION_ID__ = "dgoeflcdbfknpgpdehcfjijnkmifkgde";
     }
 })();
 const $ = (selector) => document.querySelector(selector);
+const AppUtils = globalThis.ResumeCampaignAppUtils;
+if (!AppUtils) throw new Error("ResumeCampaignAppUtils 未加载");
 
 let currentDiscovery = null;
 let currentSessionId = localStorage.getItem("lastSessionId") || null;
@@ -80,10 +82,38 @@ function renderCompletenessNotice(resume) {
   }
 }
 
+function clearValidationMarks() {
+  document.querySelectorAll('[aria-invalid="true"]').forEach((element) => {
+    element.removeAttribute("aria-invalid");
+    element.classList.remove("is-invalid");
+  });
+}
+
+function markValidationFields(fieldIds) {
+  const fields = fieldIds.map((id) => $(`#${id}`)).filter(Boolean);
+  fields.forEach((field) => {
+    field.setAttribute("aria-invalid", "true");
+    field.classList.add("is-invalid");
+    const section = field.closest("details");
+    if (section) section.open = true;
+  });
+  if (!fields.length) return;
+  fields[0].scrollIntoView({ behavior: "smooth", block: "center" });
+  fields[0].focus({ preventScroll: true });
+}
+
 async function requestJson(url, options={}) {
+  if ((options.method || "GET").toUpperCase() !== "GET") clearValidationMarks();
   const response = await fetch(url,{...options,headers:{"Content-Type":"application/json",...(options.headers||{})}});
   const body = await response.json().catch(()=>({}));
-  if(!response.ok) throw new Error(typeof body.detail === "string" ? body.detail : `请求失败（${response.status}）`);
+  if(!response.ok) {
+    const description = AppUtils.describeApiError(response.status, body);
+    markValidationFields(description.fieldIds);
+    const error = new Error(description.message);
+    error.status = response.status;
+    error.details = description.details;
+    throw error;
+  }
   return body;
 }
 
@@ -345,13 +375,9 @@ async function buildCareerDossier(){
     const dossier=await requestJson("/api/career/job-dossier",{method:"POST",body:JSON.stringify({session_id:sessionId,...input})});
     const ranking=await requestJson("/api/career/jobs/rank",{method:"POST",body:JSON.stringify({session_id:sessionId,jobs:[{id:"current-job",...input,source:"official",application_minutes:20}]})});
     renderCareerDossier(dossier,ranking); showToast(`岗位作战包完成：匹配 ${dossier.match_score}，${dossier.hard_gaps.length} 条硬性条件待核验`);
-    }catch(error){
-    let friendly = error.message;
-    if (error.message.includes("422") || error.message.includes("请求失败")) {
-      friendly = "请先填写真实企业名称、岗位名称、官网投递URL和岗位JD，再生成岗位作战包。";
-    }
-    $("#careerDossierBody").innerHTML=`<div class="career-alert">${escapeHtml(friendly)}</div>`;
-    showToast(friendly);
+  }catch(error){
+    $("#careerDossierBody").innerHTML=`<div class="career-alert">${escapeHtml(error.message)}</div>`;
+    showToast(error.message);
   }
   finally{setCareerBusy(button,false,"");}
 }
@@ -370,12 +396,8 @@ async function createCareerVersion(){
     const audit=await requestJson(`/api/career/resume-versions/${encodeURIComponent(version.id)}/audit?session_id=${encodeURIComponent(sessionId)}`,{method:"POST"});
     careerState.versionId=version.id;renderCareerVersion(version,audit);showToast(`岗位版本已生成：${version.changes.length} 项顺序调整，事实母版未修改`);
   }catch(error){
-    let friendly = error.message;
-    if (error.message.includes("422") || error.message.includes("请求失败")) {
-      friendly = "请先填写真实企业名称、岗位名称、官网投递URL和岗位JD，再生成一岗一简历。";
-    }
-    $("#careerVersionBody").innerHTML=`<div class="career-alert">${escapeHtml(friendly)}</div>`;
-    showToast(friendly);
+    $("#careerVersionBody").innerHTML=`<div class="career-alert">${escapeHtml(error.message)}</div>`;
+    showToast(error.message);
   }finally{
     setCareerBusy(button,false,"");
   }
@@ -493,6 +515,12 @@ $("#addEvidenceButton").addEventListener("click",addCareerEvidence);
 $("#saveVaultButton").addEventListener("click",saveCareerVault);
 $("#careerApplicationBody").addEventListener("click",event=>{const button=event.target.closest("[data-app-status]");if(button)updateCareerApplication(button.dataset.appId,button.dataset.appStatus).catch(error=>showToast(error.message));});
 $("#editorialLedger").addEventListener("click",event=>{ const button=event.target.closest("[data-revision-index]"); if(button)copyRevision(Number(button.dataset.revisionIndex)); });
+document.addEventListener("input", (event) => {
+  const field = event.target.closest?.("input, textarea, select");
+  if (!field) return;
+  field.removeAttribute("aria-invalid");
+  field.classList.remove("is-invalid");
+});
 $("#resumeForm").addEventListener("input",()=>{ if(currentReview||currentOptimization){ $("#reviewGrade").textContent="待重新审核"; $("#reviewGrade").classList.remove("is-reviewed"); } resetCareerOS(); });
 $("#portalActionButton").addEventListener("click",loadPortalTemplate);
 $("#portalLinkButton").addEventListener("click",jumpPortal); $("#portalJumpButton").addEventListener("click",jumpPortal);

@@ -50,13 +50,14 @@ python -m pytest -q
 ## 2. 浏览器扩展单元与语法
 
 ```powershell
-node --test browser_extension/auth-utils.test.js browser_extension/journey-utils.test.js browser_extension/permission-utils.test.js
+node --test browser_extension/auth-utils.test.js browser_extension/journey-utils.test.js browser_extension/permission-utils.test.js tests/app-utils.test.js
 node --check browser_extension/service-worker.js
 node --check browser_extension/panel.js
 node --check browser_extension/content.js
 node --check browser_extension/auth-content.js
 node --check browser_extension/journey-content.js
 node --check browser_extension/submit-content.js
+node --check src/resume_campaign_agent/static/app-utils.js
 node --check src/resume_campaign_agent/static/app.js
 ```
 

@@ -14,7 +14,7 @@ Set-Location $projectRoot
 
 $node = Get-Command node -ErrorAction SilentlyContinue
 if ($node) {
-    & $node.Source --test browser_extension/auth-utils.test.js browser_extension/journey-utils.test.js browser_extension/permission-utils.test.js
+    & $node.Source --test browser_extension/auth-utils.test.js browser_extension/journey-utils.test.js browser_extension/permission-utils.test.js tests/app-utils.test.js
     @(
         "browser_extension/service-worker.js",
         "browser_extension/panel.js",
@@ -22,6 +22,7 @@ if ($node) {
         "browser_extension/auth-content.js",
         "browser_extension/journey-content.js",
         "browser_extension/submit-content.js",
+        "src/resume_campaign_agent/static/app-utils.js",
         "src/resume_campaign_agent/static/app.js"
     ) | ForEach-Object { & $node.Source --check $_ }
 } else {
