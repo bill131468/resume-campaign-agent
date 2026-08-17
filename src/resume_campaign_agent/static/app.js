@@ -345,7 +345,14 @@ async function buildCareerDossier(){
     const dossier=await requestJson("/api/career/job-dossier",{method:"POST",body:JSON.stringify({session_id:sessionId,...input})});
     const ranking=await requestJson("/api/career/jobs/rank",{method:"POST",body:JSON.stringify({session_id:sessionId,jobs:[{id:"current-job",...input,source:"official",application_minutes:20}]})});
     renderCareerDossier(dossier,ranking); showToast(`岗位作战包完成：匹配 ${dossier.match_score}，${dossier.hard_gaps.length} 条硬性条件待核验`);
-  }catch(error){$("#careerDossierBody").innerHTML=`<div class="career-alert">${escapeHtml(error.message)}</div>`;showToast(error.message);}
+    }catch(error){
+    let friendly = error.message;
+    if (error.message.includes("422") || error.message.includes("请求失败")) {
+      friendly = "请先填写真实企业名称、岗位名称、官网投递URL和岗位JD，再生成岗位作战包。";
+    }
+    $("#careerDossierBody").innerHTML=`<div class="career-alert">${escapeHtml(friendly)}</div>`;
+    showToast(friendly);
+  }
   finally{setCareerBusy(button,false,"");}
 }
 
@@ -362,8 +369,16 @@ async function createCareerVersion(){
     const version=await requestJson("/api/career/resume-versions",{method:"POST",body:JSON.stringify({session_id:sessionId,target_company:input.company,target_title:input.title,job_description:input.description})});
     const audit=await requestJson(`/api/career/resume-versions/${encodeURIComponent(version.id)}/audit?session_id=${encodeURIComponent(sessionId)}`,{method:"POST"});
     careerState.versionId=version.id;renderCareerVersion(version,audit);showToast(`岗位版本已生成：${version.changes.length} 项顺序调整，事实母版未修改`);
-  }catch(error){$("#careerVersionBody").innerHTML=`<div class="career-alert">${escapeHtml(error.message)}</div>`;showToast(error.message);}
-  finally{setCareerBusy(button,false,"");}
+  }catch(error){
+    let friendly = error.message;
+    if (error.message.includes("422") || error.message.includes("请求失败")) {
+      friendly = "请先填写真实企业名称、岗位名称、官网投递URL和岗位JD，再生成一岗一简历。";
+    }
+    $("#careerVersionBody").innerHTML=`<div class="career-alert">${escapeHtml(friendly)}</div>`;
+    showToast(friendly);
+  }finally{
+    setCareerBusy(button,false,"");
+  }
 }
 
 function renderPortalPreflight(result,checkpoint=null){
