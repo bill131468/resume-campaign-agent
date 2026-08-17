@@ -30,7 +30,7 @@ class WorkExperience(BaseModel):
     title: str = Field(min_length=2, max_length=120)
     start_date: date
     end_date: date | None = None
-    highlights: list[str] = Field(default_factory=list, max_length=8)
+    highlights: list[str] = Field(default_factory=list, max_length=20)
     experience_type: str = Field(default="full_time", max_length=40)
     department: str | None = Field(default=None, max_length=100)
     location: str | None = Field(default=None, max_length=100)
@@ -44,7 +44,7 @@ class ProjectExperience(BaseModel):
     start_date: date | None = None
     end_date: date | None = None
     description: str = Field(min_length=10, max_length=1500)
-    highlights: list[str] = Field(default_factory=list, max_length=8)
+    highlights: list[str] = Field(default_factory=list, max_length=20)
     skills: list[str] = Field(default_factory=list, max_length=20)
     url: HttpUrl | None = None
 

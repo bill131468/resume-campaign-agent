@@ -493,13 +493,104 @@ async function restoreLastSession() {
     const resume = session.resume;
 
     setField("fullName", resume.full_name);
+    setField("preferredName", resume.preferred_name);
+    setField("city", resume.city);
+    setField("professionalHeadline", resume.professional_headline);
     setField("email", resume.email);
     setField("phone", resume.phone);
-    setField("city", resume.city);
+    setField("wechat", resume.wechat);
+    setField("jobSeekingStatus", resume.job_seeking_status);
     setField("targetRoles", (resume.target_roles || []).join(","));
+    setField("targetIndustries", (resume.target_industries || []).join(","));
+    setField("targetEmployerTypes", (resume.target_employer_types || []).join(","));
     setField("baseLocations", (resume.base_locations || []).join(","));
+    setField("employmentTypes", (resume.employment_types || []).join(","));
+    setField("yearsExperience", resume.years_experience);
+    setField("availableDate", resume.available_date);
+    setField("expectedSalary", resume.expected_salary);
+    setField("relocationPreference", resume.relocation_preference);
     setField("skills", (resume.skills || []).join(","));
     setField("summary", resume.summary);
+    setField("hobbies", (resume.hobbies || []).join(","));
+    setField("selfEvaluation", resume.self_evaluation);
+    setField("additionalInformation", resume.additional_information);
+
+    // 教育经历
+    if (resume.education && resume.education.length > 0) {
+      const edu = resume.education[0];
+      setField("school", edu.school);
+      setField("college", edu.college);
+      setField("major", edu.major);
+      setField("minor", edu.minor);
+      setField("degree", edu.degree);
+      setField("educationType", edu.education_type);
+      setField("educationStartDate", edu.start_date);
+      setField("educationEndDate", edu.end_date);
+      setField("graduationYear", edu.graduation_year);
+      setField("educationLocation", edu.location);
+      setField("gpa", edu.gpa);
+      setField("gpaScale", edu.gpa_scale);
+      setField("rank", edu.rank);
+      setField("coreCourses", (edu.core_courses || []).join(","));
+      setField("thesis", edu.thesis);
+    }
+
+    // 工作经历
+    if (resume.work_experience && resume.work_experience.length > 0) {
+      const work = resume.work_experience[0];
+      setField("company", work.company);
+      setField("jobTitle", work.title);
+      setField("experienceType", work.experience_type);
+      setField("department", work.department);
+      setField("workLocation", work.location);
+      setField("startDate", work.start_date);
+      setField("endDate", work.end_date);
+      setField("responsibilities", work.responsibilities);
+      setField("highlights", (work.highlights || []).join("\n"));
+      setField("leavingReason", work.leaving_reason);
+    }
+
+    // 项目经历
+    if (resume.projects && resume.projects.length > 0) {
+      const proj = resume.projects[0];
+      setField("projectName", proj.name);
+      setField("projectRole", proj.role);
+      setField("projectStartDate", proj.start_date);
+      setField("projectEndDate", proj.end_date);
+      setField("projectDescription", proj.description);
+      setField("projectHighlights", (proj.highlights || []).join("\n"));
+      setField("projectSkills", (proj.skills || []).join(","));
+    }
+
+    // 校园经历
+    if (resume.campus_experience && resume.campus_experience.length > 0) {
+      const campus = resume.campus_experience[0];
+      setField("campusOrganization", campus.organization);
+      setField("campusRole", campus.role);
+      setField("campusDescription", campus.description);
+    }
+
+    // 证书
+    if (resume.certificates && resume.certificates.length > 0) {
+      const cert = resume.certificates[0];
+      setField("certificateName", cert.name);
+      setField("certificateIssuer", cert.issuer);
+      setField("certificateScore", cert.score);
+    }
+
+    // 语言
+    if (resume.language_details && resume.language_details.length > 0) {
+      const lang = resume.language_details[0];
+      setField("language", lang.language);
+      setField("languageProficiency", lang.proficiency);
+      setField("languageTest", lang.test_name);
+      setField("languageScore", lang.score);
+    }
+
+    // 荣誉奖项
+    if (resume.awards && resume.awards.length > 0) {
+      setField("awardName", resume.awards[0].name);
+    }
 
     currentSessionId = sessionId;
     showToast("已恢复上次简历会话", "success");
