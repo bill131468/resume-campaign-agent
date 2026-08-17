@@ -78,8 +78,12 @@
     location: ["Base", "careerLocation"],
     url: ["官网投递 URL", "careerUrl"],
     deadline: ["截止日期", "careerDeadline"],
+    target_role: ["本轮审核目标岗位", "reviewTargetRole"],
+    target_job_description: ["职位描述", "reviewJobDescription"],
     question: ["面试问题", "interviewQuestion"],
     answer: ["你的回答", "interviewAnswer"],
+    label: ["证据名称", "evidenceLabel"],
+    values: ["敏感字段值", "vaultValue"],
   };
 
   const GROUP_LABELS = {
@@ -183,5 +187,35 @@
     return { message: `请求失败（${status}）`, fieldIds: [], details: [] };
   }
 
-  return { describeApiError, fieldForLocation, validationMessage };
+  function missingResumeFields(resume) {
+    const education = resume?.education?.[0];
+    const rules = [
+      ["full_name", "姓名", Boolean(resume?.full_name?.trim())],
+      ["email", "邮箱", Boolean(resume?.email)],
+      ["phone", "电话", Boolean(resume?.phone?.trim().length >= 7)],
+      ["city", "当前城市", Boolean(resume?.city?.trim())],
+      ["target_roles", "目标岗位 / 专业方向", Boolean(resume?.target_roles?.length)],
+      ["base_locations", "意向 Base 城市", Boolean(resume?.base_locations?.length)],
+      ["skills", "专业技能", Boolean(resume?.skills?.length >= 3)],
+      ["summary", "职业摘要", Boolean(resume?.summary?.trim().length >= 20)],
+      ["education", "教育经历", Boolean(resume?.education?.length)],
+      ["education.major", "专业", Boolean(education?.major)],
+      ["education.degree", "学历 / 学位", Boolean(education?.degree)],
+      ["education.graduation_year", "毕业年份", Boolean(education?.graduation_year)],
+      [
+        "work_experience",
+        "工作 / 实习经历",
+        Number(resume?.years_experience || 0) <= 0 || Boolean(resume?.work_experience?.length),
+      ],
+    ];
+    return rules
+      .filter(([, , valid]) => !valid)
+      .map(([field, label]) => ({
+        field,
+        label,
+        reason: "通用简历、岗位匹配或中国网申所需字段",
+      }));
+  }
+
+  return { describeApiError, fieldForLocation, missingResumeFields, validationMessage };
 });

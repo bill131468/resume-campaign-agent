@@ -4,6 +4,7 @@ const assert = require("node:assert/strict");
 const {
   describeApiError,
   fieldForLocation,
+  missingResumeFields,
   validationMessage,
 } = require("../src/resume_campaign_agent/static/app-utils.js");
 
@@ -77,4 +78,34 @@ test("translates the actual Pydantic email and list length error types", () => {
     validationMessage({ type: "too_long", ctx: { max_length: 30 } }),
     "最多填写 30 项",
   );
+});
+
+test("checks the same resume fields that the workbench marks as required", () => {
+  const complete = {
+    full_name: "测试用户",
+    email: "user@example.com",
+    phone: "13800000000",
+    city: "上海",
+    target_roles: ["产品经理"],
+    base_locations: ["上海"],
+    skills: ["需求分析", "SQL", "原型设计"],
+    summary: "具备真实项目经验，能够完成需求分析、跨团队协作与项目交付。",
+    education: [{ school: "测试大学", major: "信息管理", degree: "本科", graduation_year: 2026 }],
+    years_experience: 0,
+    work_experience: [],
+  };
+
+  assert.deepEqual(missingResumeFields(complete), []);
+  const missing = missingResumeFields({
+    ...complete,
+    summary: "太短",
+    education: [{ ...complete.education[0], degree: "", graduation_year: 0 }],
+    years_experience: 1,
+  }).map((item) => item.field);
+  assert.deepEqual(missing, [
+    "summary",
+    "education.degree",
+    "education.graduation_year",
+    "work_experience",
+  ]);
 });

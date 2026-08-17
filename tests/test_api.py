@@ -165,6 +165,9 @@ def test_frontend_is_served_with_ai_takeover_language(client):
     assert "事实证据库与敏感信息保险箱" in response.text
     assert client.get("/styles.css").status_code == 200
     assert '/app-utils.js?v=1' in response.text
+    assert '姓名 <span class="field-hint">（必填）</span>' in response.text
+    assert '企业 <span class="field-hint">（岗位功能必填）</span>' in response.text
+    assert '官网投递 URL <span class="field-hint">（官网预检时必填）</span>' in response.text
     app_utils = client.get("/app-utils.js")
     assert app_utils.status_code == 200
     assert "describeApiError" in app_utils.text

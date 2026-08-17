@@ -59,13 +59,7 @@ function collectResume() {
 }
 
 function localMissing(resume) {
-  const rules = [
-    ["full_name","姓名",resume.full_name],["email","邮箱",resume.email],["phone","电话",resume.phone],["city","当前城市",resume.city],
-    ["target_roles","目标岗位 / 专业方向",resume.target_roles.length],["base_locations","意向 Base 城市",resume.base_locations.length],
-    ["skills","专业技能",resume.skills.length >= 3],["summary","职业摘要",resume.summary],
-    ["education","教育经历",resume.education.length],["education.major","专业",resume.education[0]?.major],["education.end_date","毕业日期",resume.education[0]?.end_date]
-  ];
-  return rules.filter(([, , ok])=>!ok).map(([field,label])=>({field,label,reason:"通用简历或中国网申常用必填项"}));
+  return AppUtils.missingResumeFields(resume);
 }
 
 function renderCompletenessNotice(resume) {

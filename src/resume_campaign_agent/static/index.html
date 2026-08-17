@@ -53,12 +53,12 @@
             <fieldset>
               <legend>基本信息与联系方式</legend>
               <div class="field-grid two">
-                <label>姓名<input id="fullName" autocomplete="name" required></label>
+                <label>姓名 <span class="field-hint">（必填）</span><input id="fullName" autocomplete="name" required></label>
                 <label>常用名<input id="preferredName"></label>
-                <label>当前城市<input id="city" autocomplete="address-level2" required></label>
+                <label>当前城市 <span class="field-hint">（必填）</span><input id="city" autocomplete="address-level2" required></label>
                 <label>职业定位<input id="professionalHeadline"></label>
-                <label>邮箱<input id="email" type="email" autocomplete="email" required></label>
-                <label>电话<input id="phone" autocomplete="tel" required></label>
+                <label>邮箱 <span class="field-hint">（必填）</span><input id="email" type="email" autocomplete="email" required></label>
+                <label>电话 <span class="field-hint">（必填）</span><input id="phone" autocomplete="tel" required></label>
                 <label>微信<input id="wechat"></label>
                 <label>求职状态<input id="jobSeekingStatus"></label>
               </div>
@@ -66,11 +66,11 @@
 
             <fieldset>
               <legend>求职意向与 Base</legend>
-              <label>目标岗位 / 专业方向 <span class="field-hint">逗号分隔，不限定技术岗</span><input id="targetRoles" required></label>
+              <label>目标岗位 / 专业方向 <span class="field-hint">（必填，逗号分隔）</span><input id="targetRoles" required></label>
               <div class="field-grid two">
                 <label>目标行业<input id="targetIndustries"></label>
                 <label>企业类型<input id="targetEmployerTypes"></label>
-                <label>意向 Base 城市<input id="baseLocations" required></label>
+                <label>意向 Base 城市 <span class="field-hint">（必填）</span><input id="baseLocations" required></label>
                 <label>希望优先搜索的企业<input id="companyKeywords" placeholder="留空则尽可能广泛搜索"></label>
                 <label>用工类型<input id="employmentTypes"></label>
                 <label>工作年限<input id="yearsExperience" type="number" min="0" max="60" step="0.5"></label>
@@ -78,19 +78,19 @@
                 <label>期望薪资<input id="expectedSalary"></label>
               </div>
               <label>搬迁 / 调剂意愿<input id="relocationPreference"></label>
-              <label>专业技能与工具 <span class="field-hint">逗号分隔</span><input id="skills" required></label>
-              <label>职业摘要<textarea id="summary" rows="4" required></textarea></label>
+              <label>专业技能与工具 <span class="field-hint">（必填，至少 3 项，逗号分隔）</span><input id="skills" required></label>
+              <label>职业摘要 <span class="field-hint">（必填，至少 20 字）</span><textarea id="summary" rows="4" required></textarea></label>
             </fieldset>
 
             <details class="form-section" open>
               <summary>教育经历 <span>学校、院系、时间、成绩与课程</span></summary>
               <div class="details-body">
                 <div class="field-grid two">
-                  <label>学校<input id="school" required></label><label>院系<input id="college"></label>
-                  <label>专业<input id="major" required></label><label>辅修 / 双学位<input id="minor"></label>
-                  <label>学历 / 学位<input id="degree" required></label><label>学习类型<input id="educationType"></label>
+                  <label>学校 <span class="field-hint">（必填）</span><input id="school" required></label><label>院系<input id="college"></label>
+                  <label>专业 <span class="field-hint">（必填）</span><input id="major" required></label><label>辅修 / 双学位<input id="minor"></label>
+                  <label>学历 / 学位 <span class="field-hint">（必填）</span><input id="degree" required></label><label>学习类型<input id="educationType"></label>
                   <label>入学日期<input id="educationStartDate" type="date"></label><label>毕业日期<input id="educationEndDate" type="date"></label>
-                  <label>毕业年份<input id="graduationYear" type="number" min="1950" max="2100" required></label><label>学校所在地<input id="educationLocation"></label>
+                  <label>毕业年份 <span class="field-hint">（必填）</span><input id="graduationYear" type="number" min="1950" max="2100" required></label><label>学校所在地<input id="educationLocation"></label>
                   <label>GPA<input id="gpa" type="number" min="0" max="100" step="0.01"></label><label>GPA 满分<input id="gpaScale" type="number" min="0" max="100" step="0.01"></label>
                   <label>排名<input id="rank"></label><label>核心课程<input id="coreCourses"></label>
                 </div>
@@ -102,10 +102,10 @@
               <summary>工作 / 实习经历 <span>职责与可核实成果</span></summary>
               <div class="details-body">
                 <div class="field-grid two">
-                  <label>企业 / 机构<input id="company"></label><label>岗位<input id="jobTitle"></label>
+                  <label>企业 / 机构 <span class="field-hint">（填写本段时必填）</span><input id="company"></label><label>岗位 <span class="field-hint">（填写本段时必填）</span><input id="jobTitle"></label>
                   <label>经历类型<select id="experienceType"><option value="internship">实习</option><option value="full_time">全职</option><option value="part_time">兼职</option><option value="research">科研</option></select></label>
                   <label>部门<input id="department"></label><label>所在地<input id="workLocation"></label>
-                  <label>开始日期<input id="startDate" type="date"></label><label>结束日期<input id="endDate" type="date"></label>
+                  <label>开始日期 <span class="field-hint">（填写本段时必填）</span><input id="startDate" type="date"></label><label>结束日期<input id="endDate" type="date"></label>
                 </div>
                 <label>职责<textarea id="responsibilities" rows="3"></textarea></label>
                 <label>成果摘要<textarea id="highlights" rows="3" placeholder="每行一条，只写可以核实的成果"></textarea></label>
@@ -117,10 +117,10 @@
               <summary>项目 / 课题经历 <span>任意专业均可填写</span></summary>
               <div class="details-body">
                 <div class="field-grid two">
-                  <label>项目名称<input id="projectName"></label><label>承担角色<input id="projectRole"></label>
+                  <label>项目名称 <span class="field-hint">（填写本段时必填）</span><input id="projectName"></label><label>承担角色<input id="projectRole"></label>
                   <label>开始日期<input id="projectStartDate" type="date"></label><label>结束日期<input id="projectEndDate" type="date"></label>
                 </div>
-                <label>项目说明<textarea id="projectDescription" rows="3"></textarea></label>
+                <label>项目说明 <span class="field-hint">（填写本段时必填）</span><textarea id="projectDescription" rows="3"></textarea></label>
                 <label>成果 / 产出<textarea id="projectHighlights" rows="2"></textarea></label>
                 <label>相关能力<input id="projectSkills"></label>
               </div>
@@ -130,12 +130,12 @@
               <summary>校园、证书、语言与荣誉 <span>补充能力证据</span></summary>
               <div class="details-body">
                 <div class="field-grid two">
-                  <label>校园组织<input id="campusOrganization"></label><label>校园职务<input id="campusRole"></label>
-                  <label>校园经历说明<input id="campusDescription"></label><label>证书名称<input id="certificateName"></label>
+                  <label>校园组织 <span class="field-hint">（填写校园经历时必填）</span><input id="campusOrganization"></label><label>校园职务 <span class="field-hint">（填写校园经历时必填）</span><input id="campusRole"></label>
+                  <label>校园经历说明 <span class="field-hint">（填写校园经历时必填）</span><input id="campusDescription"></label><label>证书名称 <span class="field-hint">（填写证书时必填）</span><input id="certificateName"></label>
                   <label>证书颁发方<input id="certificateIssuer"></label><label>证书成绩<input id="certificateScore"></label>
-                  <label>语言<input id="language"></label><label>熟练度<input id="languageProficiency"></label>
+                  <label>语言 <span class="field-hint">（填写语言时必填）</span><input id="language"></label><label>熟练度 <span class="field-hint">（填写语言时必填）</span><input id="languageProficiency"></label>
                   <label>语言考试<input id="languageTest"></label><label>语言成绩<input id="languageScore"></label>
-                  <label>荣誉 / 奖项<input id="awardName"></label><label>兴趣爱好<input id="hobbies"></label>
+                  <label>荣誉 / 奖项 <span class="field-hint">（填写奖项时必填）</span><input id="awardName"></label><label>兴趣爱好<input id="hobbies"></label>
                 </div>
                 <label>自我评价<textarea id="selfEvaluation" rows="3"></textarea></label>
                 <label>补充说明<textarea id="additionalInformation" rows="2"></textarea></label>
@@ -204,12 +204,12 @@
 
         <div class="career-input-sheet">
           <div class="career-job-grid">
-            <label>企业<input id="careerCompany" placeholder="从上方岗位清单选择或填写真实企业"></label>
-            <label>岗位<input id="careerTitle" placeholder="填写真实岗位名称"></label>
+            <label>企业 <span class="field-hint">（岗位功能必填）</span><input id="careerCompany" placeholder="从上方岗位清单选择或填写真实企业"></label>
+            <label>岗位 <span class="field-hint">（岗位功能必填）</span><input id="careerTitle" placeholder="填写真实岗位名称"></label>
             <label>Base<input id="careerLocation" placeholder="岗位工作城市"></label>
             <label>截止日期<input id="careerDeadline" type="date"></label>
-            <label class="span-two">官网投递 URL<input id="careerUrl" placeholder="https://企业官方招聘域名/岗位路径"></label>
-            <label class="span-two">岗位 JD<textarea id="careerJD" rows="6" maxlength="12000" placeholder="粘贴官网真实岗位职责与任职要求"></textarea></label>
+            <label class="span-two">官网投递 URL <span class="field-hint">（官网预检时必填）</span><input id="careerUrl" placeholder="https://企业官方招聘域名/岗位路径"></label>
+            <label class="span-two">岗位 JD <span class="field-hint">（岗位功能必填，至少 10 字）</span><textarea id="careerJD" rows="6" maxlength="12000" placeholder="粘贴官网真实岗位职责与任职要求"></textarea></label>
           </div>
           <div class="career-command-rail">
             <button id="buildCareerDossierButton" class="career-primary" type="button"><span>生成岗位作战包</span><small>PARSE · MATCH · RISK · RANK</small></button>
@@ -254,8 +254,8 @@
           <article class="career-module" id="careerInterviewDesk">
             <div class="career-module-title"><span>05</span><div><h3>面试准备与一致性训练</h3><p>根据 JD 和岗位简历追问；回答不得超出事实母版</p></div></div>
             <div class="interview-simulator">
-              <label>面试问题<input id="interviewQuestion" placeholder="填写要练习的真实面试问题"></label>
-              <label>你的回答<textarea id="interviewAnswer" rows="4" placeholder="使用背景、目标、行动、结果组织回答"></textarea></label>
+              <label>面试问题 <span class="field-hint">（回答审核时必填）</span><input id="interviewQuestion" placeholder="填写要练习的真实面试问题"></label>
+              <label>你的回答 <span class="field-hint">（回答审核时必填）</span><textarea id="interviewAnswer" rows="4" placeholder="使用背景、目标、行动、结果组织回答"></textarea></label>
               <button id="simulateInterviewButton" type="button">审核这段回答</button>
             </div>
             <div class="career-module-body" id="careerInterviewBody"><div class="career-placeholder">生成面试准备包后显示追问题库。</div></div>
@@ -266,14 +266,14 @@
             <div class="evidence-vault-grid">
               <div class="evidence-entry">
                 <strong>添加证据记录</strong>
-                <label>证据名称<input id="evidenceLabel" placeholder="项目报告、获奖证明或成果记录"></label>
+                <label>证据名称 <span class="field-hint">（保存证据时必填）</span><input id="evidenceLabel" placeholder="项目报告、获奖证明或成果记录"></label>
                 <label>可核实事实<input id="evidenceFacts" placeholder="只填写能够由本人材料证明的事实"></label>
                 <button id="addEvidenceButton" type="button">保存到证据库</button>
               </div>
               <div class="vault-entry">
                 <strong>临时加密保险箱</strong>
                 <label>敏感字段<select id="vaultField"><option value="student_id">学号</option><option value="identity_number">证件号码</option><option value="home_address">家庭地址</option><option value="emergency_phone">紧急联系人电话</option></select></label>
-                <label>字段值<input id="vaultValue" type="password" autocomplete="off" placeholder="仅 HTTPS 或本机允许保存"></label>
+                <label>字段值 <span class="field-hint">（保存时必填）</span><input id="vaultValue" type="password" autocomplete="off" placeholder="仅 HTTPS 或本机允许保存"></label>
                 <button id="saveVaultButton" type="button">加密保存元数据</button>
                 <small>公网 HTTP 环境自动禁用；进程重启后密钥和密文一并失效。</small>
               </div>

@@ -26,8 +26,10 @@ dependencies = [
   "email-validator>=2.2,<3",
   "fastapi>=0.116,<1",
   "httpx>=0.28,<1",
+  "playwright>=1.50,<2",
   "pydantic-ai-slim[openai]>=1.0,<2",
   "pydantic-settings>=2.10,<3",
+  "python-docx>=1.1,<2",
   "python-dotenv>=1.1,<2",
   "uvicorn[standard]>=0.35,<1",
 ]
