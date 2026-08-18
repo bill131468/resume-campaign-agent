@@ -413,7 +413,7 @@ class AutoSubmitter:
             context = await p.chromium.launch_persistent_context(
                 str(udd), headless=headless, viewport={"width": 1280, "height": 900},
                 locale="zh-CN",
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36",
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120 Safari/537.36",
                 args=["--disable-blink-features=AutomationControlled"]
             )
             page = await context.new_page()

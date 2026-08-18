@@ -75,7 +75,7 @@
     target_title: ["岗位", "careerTitle"],
     description: ["岗位 JD", "careerJD"],
     job_description: ["岗位 JD", "careerJD"],
-    location: ["Base", "careerLocation"],
+    location: ["工作城市", "careerLocation"],
     url: ["官网投递 URL", "careerUrl"],
     deadline: ["截止日期", "careerDeadline"],
     target_role: ["本轮审核目标岗位", "reviewTargetRole"],
@@ -112,9 +112,17 @@
       const itemLabel = Number.isInteger(itemIndex) ? `第 ${itemIndex + 1} 段` : "";
       label = `${GROUP_LABELS[groupPath]}${itemLabel} · ${label}`;
     }
+    let fieldId = meta?.[1] || null;
+    if (Number.isInteger(itemIndex) && canonical.startsWith("resume.work_experience.")) {
+      fieldId = `work-${itemIndex}-${meta?.[1] || ""}`;
+    } else if (Number.isInteger(itemIndex) && canonical.startsWith("resume.projects.")) {
+      fieldId = `project-${itemIndex}-${meta?.[1] || ""}`;
+    } else if (Number.isInteger(itemIndex) && itemIndex > 0) {
+      fieldId = null;
+    }
     return {
       label,
-      fieldId: meta && (!Number.isInteger(itemIndex) || itemIndex === 0) ? meta[1] : null,
+      fieldId,
     };
   }
 

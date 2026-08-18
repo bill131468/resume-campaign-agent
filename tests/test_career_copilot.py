@@ -1,5 +1,9 @@
 from datetime import date, datetime, timedelta, timezone
 
+import pytest
+
+from resume_campaign_agent.career_copilot import CareerCopilotService
+from resume_campaign_agent.career_models import ApplicationCreateRequest
 
 def _session(client):
     resume = {
@@ -28,6 +32,24 @@ def _session(client):
 JD = """岗位职责：负责品牌内容策划、用户调研和活动复盘。
 任职要求：本科及以上学历，具备 Excel 数据整理能力。
 有消费品校园推广经验者优先。"""
+
+
+@pytest.mark.asyncio
+async def test_application_timeline_survives_service_restart(tmp_path):
+    service = CareerCopilotService(data_dir=tmp_path)
+    created = await service.create_application(
+        ApplicationCreateRequest(
+            session_id="sess_persist",
+            company="星河消费（虚构）",
+            title="品牌运营",
+            status="ready",
+            job_description=JD,
+        )
+    )
+
+    reloaded = CareerCopilotService(data_dir=tmp_path)
+    applications = await reloaded.list_applications("sess_persist")
+    assert [item.id for item in applications] == [created.id]
 
 
 def test_job_dossier_version_and_fact_audit(client):

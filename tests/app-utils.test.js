@@ -29,7 +29,7 @@ test("formats Pydantic resume validation details and maps the first form section
     result.message,
     "工作 / 实习经历第 1 段 · 岗位：至少填写 2 个字符；工作 / 实习经历第 1 段 · 开始日期：请输入有效日期",
   );
-  assert.deepEqual(result.fieldIds, ["jobTitle", "startDate"]);
+  assert.deepEqual(result.fieldIds, ["work-0-jobTitle", "work-0-startDate"]);
 });
 
 test("maps career request aliases without claiming that optional URL is required", () => {

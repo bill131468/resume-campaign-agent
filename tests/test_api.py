@@ -20,8 +20,8 @@ def test_production_mode_starts_empty_and_hides_all_browser_fixtures(production_
 
     home = production_client.get("/")
     assert home.status_code == 200
-    assert "正式投递模式" in home.text
-    assert "REAL PROFILE" in home.text
+    assert "请使用真实信息" in home.text
+    assert "建立求职档案" in home.text
     assert "合成测试档案" not in home.text
     assert "loadDemoButton" not in home.text
     assert "星河消费（虚构）" not in home.text
@@ -104,6 +104,19 @@ def test_patch_writes_user_fields_into_template(client):
     assert response.json()["resume"]["skills"] == ["Python", "SQL", "Docker"]
 
 
+def test_session_list_returns_most_recent_profile_first(client):
+    first = client.post("/api/sessions", json={"resume": {"full_name": "第一份"}}).json()
+    second = client.post("/api/sessions", json={"resume": {"full_name": "第二份"}}).json()
+    updated = client.patch(
+        f"/api/sessions/{first['id']}/resume", json={"city": "杭州"}
+    )
+    assert updated.status_code == 200
+
+    sessions = client.get("/api/sessions")
+    assert sessions.status_code == 200
+    assert [item["id"] for item in sessions.json()[:2]] == [first["id"], second["id"]]
+
+
 def test_entry_level_resume_never_drafts_obvious_senior_role(client, complete_resume):
     created = client.post("/api/sessions", json={"resume": complete_resume}).json()
     body = client.post(
@@ -153,15 +166,15 @@ def test_batch_preview_separates_complete_and_incomplete_resumes(client, complet
     )
 
 
-def test_frontend_is_served_with_ai_takeover_language(client):
+def test_frontend_is_served_with_plain_language_workflow(client):
     response = client.get("/")
     assert response.status_code == 200
     assert "投递作战夹" in response.text
-    assert "逐岗位确认后投递" in response.text
-    assert "AI 投递队列" in response.text
-    assert "简历审核与优化台" in response.text
-    assert "不会自动覆盖原简历" in response.text
-    assert "求职驾驶舱" in response.text
+    assert "每个岗位都由你确认" in response.text
+    assert "企业与招聘入口" in response.text
+    assert "检查和修改简历" in response.text
+    assert "不会自动覆盖你的原始档案" in response.text
+    assert "处理目标岗位" in response.text
     assert "事实证据库与敏感信息保险箱" in response.text
     assert client.get("/styles.css").status_code == 200
     assert '/app-utils.js?v=1' in response.text

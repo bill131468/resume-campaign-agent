@@ -22,6 +22,8 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
+  "alibabacloud-credentials>=1.0.12,<2",
+  "alibabacloud-dypnsapi20170525>=2.0,<3",
   "cryptography>=45,<47",
   "email-validator>=2.2,<3",
   "fastapi>=0.116,<1",
