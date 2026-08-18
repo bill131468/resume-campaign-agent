@@ -14,19 +14,121 @@ window.__EXTENSION_ID__ = "dgoeflcdbfknpgpdehcfjijnkmifkgde";
     }
 })();
 const $ = (selector) => document.querySelector(selector);
+const AppUtils = globalThis.ResumeCampaignAppUtils;
+if (!AppUtils) throw new Error("ResumeCampaignAppUtils 未加载");
 
 let currentDiscovery = null;
 let currentSessionId = localStorage.getItem("lastSessionId") || null;
 let currentReview = null;
 let currentOptimization = null;
-const careerState = { sessionId: null, dossier: null, versionId: null, applicationId: null, interviewKit: null };
+const careerState = { sessionId: null, dossier: null, versionId: null, applicationId: null, interviewKit: null, applications: [] };
 let toastTimer = null;
 const pendingTakeovers = new Map();
+let profileDirty = false;
 
 function splitValues(input) { return String(input || "").split(/[,，\n]/).map((x) => x.trim()).filter(Boolean); }
 function value(id) { return $(`#${id}`).value.trim(); }
 function optional(id) { return value(id) || null; }
 function setField(id, fieldValue) { const el = $(`#${id}`); if (el) el.value = fieldValue ?? ""; }
+
+function entryValue(entry, name) {
+  return entry.querySelector(`[data-entry-field="${name}"]`)?.value.trim() || "";
+}
+
+function workEntryMarkup(work={}, index) {
+  return `<article class="repeatable-entry" data-work-entry>
+    <div class="repeatable-heading"><strong>第 ${index + 1} 段经历</strong><button type="button" data-remove-entry="work" aria-label="删除第 ${index + 1} 段工作经历">删除</button></div>
+    <div class="field-grid two">
+      <label>企业 / 机构 <span class="field-hint">（本段必填）</span><input id="work-${index}-company" data-entry-field="company" value="${escapeHtml(work.company || "")}"></label>
+      <label>岗位 <span class="field-hint">（本段必填）</span><input id="work-${index}-jobTitle" data-entry-field="jobTitle" value="${escapeHtml(work.title || "")}"></label>
+      <label>经历类型<select id="work-${index}-experienceType" data-entry-field="experienceType"><option value="internship">实习</option><option value="full_time">全职</option><option value="part_time">兼职</option><option value="research">科研</option></select></label>
+      <label>部门<input id="work-${index}-department" data-entry-field="department" value="${escapeHtml(work.department || "")}"></label>
+      <label>所在地<input id="work-${index}-workLocation" data-entry-field="workLocation" value="${escapeHtml(work.location || "")}"></label>
+      <label>开始日期 <span class="field-hint">（本段必填）</span><input id="work-${index}-startDate" data-entry-field="startDate" type="date" value="${escapeHtml(work.start_date || "")}"></label>
+      <label>结束日期<input id="work-${index}-endDate" data-entry-field="endDate" type="date" value="${escapeHtml(work.end_date || "")}"></label>
+    </div>
+    <label>主要职责<textarea id="work-${index}-responsibilities" data-entry-field="responsibilities" rows="3">${escapeHtml(work.responsibilities || "")}</textarea></label>
+    <label>成果摘要<textarea id="work-${index}-highlights" data-entry-field="highlights" rows="3" placeholder="每行一条，只写可以核实的成果">${escapeHtml((work.highlights || []).join("\n"))}</textarea></label>
+    <label>离职 / 结束原因<input id="work-${index}-leavingReason" data-entry-field="leavingReason" value="${escapeHtml(work.leaving_reason || "")}"></label>
+  </article>`;
+}
+
+function projectEntryMarkup(project={}, index) {
+  return `<article class="repeatable-entry" data-project-entry>
+    <div class="repeatable-heading"><strong>第 ${index + 1} 段项目</strong><button type="button" data-remove-entry="project" aria-label="删除第 ${index + 1} 段项目经历">删除</button></div>
+    <div class="field-grid two">
+      <label>项目名称 <span class="field-hint">（本段必填）</span><input id="project-${index}-projectName" data-entry-field="projectName" value="${escapeHtml(project.name || "")}"></label>
+      <label>承担角色<input id="project-${index}-projectRole" data-entry-field="projectRole" value="${escapeHtml(project.role || "")}"></label>
+      <label>开始日期<input id="project-${index}-projectStartDate" data-entry-field="projectStartDate" type="date" value="${escapeHtml(project.start_date || "")}"></label>
+      <label>结束日期<input id="project-${index}-projectEndDate" data-entry-field="projectEndDate" type="date" value="${escapeHtml(project.end_date || "")}"></label>
+    </div>
+    <label>项目说明 <span class="field-hint">（本段必填，至少 10 字）</span><textarea id="project-${index}-projectDescription" data-entry-field="projectDescription" rows="3">${escapeHtml(project.description || "")}</textarea></label>
+    <label>成果 / 产出<textarea id="project-${index}-projectHighlights" data-entry-field="projectHighlights" rows="2">${escapeHtml((project.highlights || []).join("\n"))}</textarea></label>
+    <label>相关能力<input id="project-${index}-projectSkills" data-entry-field="projectSkills" value="${escapeHtml((project.skills || []).join(", "))}"></label>
+  </article>`;
+}
+
+function renderWorkEntries(items=[{}]) {
+  const entries = items.length ? items : [{}];
+  $("#workEntries").innerHTML = entries.map(workEntryMarkup).join("");
+  entries.forEach((item, index) => {
+    const select = $(`#work-${index}-experienceType`);
+    if (select) select.value = item.experience_type || "internship";
+  });
+}
+
+function renderProjectEntries(items=[{}]) {
+  const entries = items.length ? items : [{}];
+  $("#projectEntries").innerHTML = entries.map(projectEntryMarkup).join("");
+}
+
+function collectWorkEntries(includeEmpty=false) {
+  const items=[...document.querySelectorAll("[data-work-entry]")].map((entry) => ({
+    company:entryValue(entry,"company"), title:entryValue(entry,"jobTitle"), experience_type:entryValue(entry,"experienceType") || "internship",
+    department:entryValue(entry,"department") || null, location:entryValue(entry,"workLocation") || null,
+    start_date:entryValue(entry,"startDate"), end_date:entryValue(entry,"endDate") || null,
+    responsibilities:entryValue(entry,"responsibilities") || null, highlights:splitValues(entryValue(entry,"highlights")),
+    leaving_reason:entryValue(entry,"leavingReason") || null,
+  }));
+  return includeEmpty ? items : items.filter((item) => item.company || item.title || item.start_date || item.responsibilities || item.highlights.length);
+}
+
+function collectProjectEntries(includeEmpty=false) {
+  const items=[...document.querySelectorAll("[data-project-entry]")].map((entry) => ({
+    name:entryValue(entry,"projectName"), role:entryValue(entry,"projectRole") || null,
+    start_date:entryValue(entry,"projectStartDate") || null, end_date:entryValue(entry,"projectEndDate") || null,
+    description:entryValue(entry,"projectDescription"), highlights:splitValues(entryValue(entry,"projectHighlights")),
+    skills:splitValues(entryValue(entry,"projectSkills")),
+  }));
+  return includeEmpty ? items : items.filter((item) => item.name || item.role || item.description || item.highlights.length || item.skills.length);
+}
+
+async function loadAccount() {
+  try {
+    const status = await requestJson("/api/auth/status");
+    if (!status.enabled) {
+      $("#accountPhone").hidden = true;
+      $("#logoutButton").hidden = true;
+      return;
+    }
+    const account = await requestJson("/api/auth/me");
+    const label = `手机尾号 ${account.phoneLast4}`;
+    $("#accountPhone").textContent = label;
+    $("#accountPhone").hidden = false;
+  } catch {
+    window.location.assign("/login");
+  }
+}
+
+async function logoutAccount() {
+  $("#logoutButton").disabled = true;
+  try {
+    await fetch("/api/auth/logout", { method: "POST" });
+  } finally {
+    localStorage.removeItem("lastSessionId");
+    window.location.assign("/login");
+  }
+}
 
 function collectResume() {
   const education = value("school") ? [{
@@ -35,11 +137,8 @@ function collectResume() {
     education_type:optional("educationType"), gpa:value("gpa") ? Number(value("gpa")) : null, gpa_scale:value("gpaScale") ? Number(value("gpaScale")) : null,
     rank:optional("rank"), core_courses:splitValues(value("coreCourses")), thesis:optional("thesis")
   }] : [];
-  const work = value("company") ? [{ company:value("company"), title:value("jobTitle"), experience_type:value("experienceType"), department:optional("department"),
-    location:optional("workLocation"), start_date:value("startDate"), end_date:optional("endDate"), responsibilities:optional("responsibilities"),
-    highlights:splitValues(value("highlights")), leaving_reason:optional("leavingReason") }] : [];
-  const projects = value("projectName") ? [{ name:value("projectName"), role:optional("projectRole"), start_date:optional("projectStartDate"), end_date:optional("projectEndDate"),
-    description:value("projectDescription"), highlights:splitValues(value("projectHighlights")), skills:splitValues(value("projectSkills")) }] : [];
+  const work = collectWorkEntries();
+  const projects = collectProjectEntries();
   const campus = value("campusOrganization") ? [{ organization:value("campusOrganization"), role:value("campusRole"), description:value("campusDescription") }] : [];
   const certificates = value("certificateName") ? [{ name:value("certificateName"), issuer:optional("certificateIssuer"), score:optional("certificateScore") }] : [];
   const languageDetails = value("language") ? [{ language:value("language"), proficiency:value("languageProficiency"), test_name:optional("languageTest"), score:optional("languageScore") }] : [];
@@ -57,13 +156,7 @@ function collectResume() {
 }
 
 function localMissing(resume) {
-  const rules = [
-    ["full_name","姓名",resume.full_name],["email","邮箱",resume.email],["phone","电话",resume.phone],["city","当前城市",resume.city],
-    ["target_roles","目标岗位 / 专业方向",resume.target_roles.length],["base_locations","意向 Base 城市",resume.base_locations.length],
-    ["skills","专业技能",resume.skills.length >= 3],["summary","职业摘要",resume.summary],
-    ["education","教育经历",resume.education.length],["education.major","专业",resume.education[0]?.major],["education.end_date","毕业日期",resume.education[0]?.end_date]
-  ];
-  return rules.filter(([, , ok])=>!ok).map(([field,label])=>({field,label,reason:"通用简历或中国网申常用必填项"}));
+  return AppUtils.missingResumeFields(resume);
 }
 
 function renderCompletenessNotice(resume) {
@@ -80,18 +173,109 @@ function renderCompletenessNotice(resume) {
   }
 }
 
+function updateProfileProgress(resume=collectResume()) {
+  const missing = localMissing(resume);
+  renderMissing(missing);
+  renderCompletenessNotice(resume);
+  $("#profileProgress").textContent = missing.length
+    ? `还差 ${missing.length} 项核心内容`
+    : "核心内容已完整，可以处理岗位";
+  return missing;
+}
+
+function setProfileSaveState(state, message) {
+  const status = $("#profileSaveStatus");
+  status.className = `file-chip save-state-${state}`;
+  status.textContent = message;
+  $("#railResumeStatus").textContent = message;
+  $("#railResume").classList.toggle("is-complete", state === "saved");
+}
+
+function profileFieldIds(missing) {
+  const ids={full_name:"fullName",email:"email",phone:"phone",city:"city",target_roles:"targetRoles",base_locations:"baseLocations",skills:"skills",summary:"summary",education:"school","education.major":"major","education.degree":"degree","education.graduation_year":"graduationYear",work_experience:"work-0-company"};
+  return missing.map((item)=>ids[item.field]).filter(Boolean);
+}
+
+async function ensureProfileSession({notify=false,requireComplete=false}={}) {
+  const resume = collectResume();
+  const missing=updateProfileProgress(resume);
+  if(requireComplete && missing.length){
+    markValidationFields(profileFieldIds(missing));
+    throw new Error(`请先补齐 ${missing.length} 项核心内容，再继续`);
+  }
+  setProfileSaveState("saving", "正在保存");
+  const payload = {resume, preferred_locations:resume.base_locations, remote_preference:"any"};
+  let session;
+  try {
+    session = currentSessionId
+      ? await requestJson(`/api/sessions/${encodeURIComponent(currentSessionId)}/resume`, {method:"PATCH", body:JSON.stringify(resume)})
+      : await requestJson("/api/sessions", {method:"POST", body:JSON.stringify(payload)});
+  } catch (error) {
+    setProfileSaveState("error", "保存失败");
+    throw error;
+  }
+  currentSessionId = session.id;
+  careerState.sessionId = session.id;
+  localStorage.setItem("lastSessionId", session.id);
+  profileDirty = false;
+  setProfileSaveState("saved", `已保存 ${new Date(session.updated_at).toLocaleTimeString("zh-CN", {hour:"2-digit", minute:"2-digit"})}`);
+  if (notify) showToast("档案已保存");
+  return session;
+}
+
+async function saveProfile(continueToJob=false) {
+  const buttons = [$("#saveProfileButton"), $("#saveProfileTopButton")];
+  buttons.forEach((button) => { button.disabled = true; });
+  try {
+    await ensureProfileSession({notify:true, requireComplete:continueToJob});
+    if (continueToJob) goToWorkflow("careerOS", 2);
+  } catch (error) {
+    showToast(error.message);
+  } finally {
+    buttons.forEach((button) => { button.disabled = false; });
+  }
+}
+
+function clearValidationMarks() {
+  document.querySelectorAll('[aria-invalid="true"]').forEach((element) => {
+    element.removeAttribute("aria-invalid");
+    element.classList.remove("is-invalid");
+  });
+}
+
+function markValidationFields(fieldIds) {
+  const fields = fieldIds.map((id) => $(`#${id}`)).filter(Boolean);
+  fields.forEach((field) => {
+    field.setAttribute("aria-invalid", "true");
+    field.classList.add("is-invalid");
+    const section = field.closest("details");
+    if (section) section.open = true;
+  });
+  if (!fields.length) return;
+  fields[0].scrollIntoView({ behavior: "smooth", block: "center" });
+  fields[0].focus({ preventScroll: true });
+}
+
 async function requestJson(url, options={}) {
+  if ((options.method || "GET").toUpperCase() !== "GET") clearValidationMarks();
   const response = await fetch(url,{...options,headers:{"Content-Type":"application/json",...(options.headers||{})}});
   const body = await response.json().catch(()=>({}));
-  if(!response.ok) throw new Error(typeof body.detail === "string" ? body.detail : `请求失败（${response.status}）`);
+  if(!response.ok) {
+    const description = AppUtils.describeApiError(response.status, body);
+    markValidationFields(description.fieldIds);
+    const error = new Error(description.message);
+    error.status = response.status;
+    error.details = description.details;
+    throw error;
+  }
   return body;
 }
 
 async function checkHealth(){
   try { const h=await requestJson("/api/health"); $("#healthDot").classList.add("is-online");
-    $("#healthText").textContent=h.deployment_mode==="production"?"Agent 在线 · 正式逐岗位投递":"Agent 在线 · 测试夹具模式";
-    $("#modelText").textContent=h.model||"LLM 排序未配置"; $("#sourceText").textContent=h.enterprise_search||"Exa AI + 官方入口";
-  } catch { $("#healthText").textContent="Agent 未连接"; }
+    $("#healthText").textContent=h.deployment_mode==="production"?"服务正常 · 每个岗位单独确认":"服务正常 · 测试模式";
+    $("#modelText").textContent=h.model?"岗位排序已启用":"使用基础排序"; $("#sourceText").textContent=h.enterprise_search?"企业搜索已启用":"企业官网与公开招聘入口";
+  } catch { $("#healthText").textContent="服务暂时未连接"; }
 }
 
 function setLoading(on){
@@ -105,10 +289,8 @@ function setLoading(on){
 async function runDiscovery(){
   setLoading(true);
   try {
-    const resume=collectResume(); renderMissing(localMissing(resume)); renderCompletenessNotice(resume);
-    const session=await requestJson("/api/sessions",{method:"POST",body:JSON.stringify({resume,preferred_locations:resume.base_locations,remote_preference:"any"})});
-    currentSessionId=session.id;
-    localStorage.setItem("lastSessionId", session.id);
+    const session=await ensureProfileSession({requireComplete:true});
+    const resume=session.resume;
     const result=await requestJson("/api/discovery/enterprises",{method:"POST",body:JSON.stringify({
       session_id:session.id,base_locations:resume.base_locations,professional_directions:resume.target_roles,industries:resume.target_industries,
       employer_types:resume.target_employer_types,company_keywords:splitValues(value("companyKeywords")),limit:20,ai_ranking:true
@@ -127,9 +309,7 @@ function renderMissing(missing){
 function reviewTarget(){ return value("reviewTargetRole") || splitValues(value("targetRoles"))[0] || null; }
 
 async function createReviewSession(){
-  const resume=collectResume();
-  renderMissing(localMissing(resume));
-  return requestJson("/api/sessions",{method:"POST",body:JSON.stringify({resume,preferred_locations:resume.base_locations,remote_preference:"any"})});
+  return ensureProfileSession();
 }
 
 function setReviewBusy(button,on,label){
@@ -145,8 +325,8 @@ function renderResumeReview(review){
   const dimensions=review.dimensions.map(item=>`<div class="dimension-row" title="${escapeHtml(item.summary)}"><span>${escapeHtml(item.label)}</span><div class="dimension-rule"><i style="--dimension-score:${item.score}%"></i></div><strong>${item.score}</strong></div>`).join("");
   const strengths=review.strengths.length?`<div class="review-subsection"><h3>已有优势</h3><ul>${review.strengths.map(item=>`<li>${escapeHtml(item)}</li>`).join("")}</ul></div>`:"";
   const questions=review.evidence_questions.length?`<div class="review-subsection"><h3>需要本人补证</h3><ul>${review.evidence_questions.map(item=>`<li>${escapeHtml(item)}</li>`).join("")}</ul></div>`:"";
-  $("#reviewScoreboard").innerHTML=`<div class="review-score-head"><div class="review-score-number"><strong>${review.overall_score}</strong><span>GRADE ${review.grade}</span></div><div><h3>${escapeHtml(review.target_role||"通用质量审核")}</h3><p>${review.ai_used?"AI 语义审核 + 确定性规则":"确定性规则审核"} · 原简历未修改</p></div></div><div class="dimension-ledger">${dimensions}</div>${strengths}${questions}`;
-  $("#editorialLedger").innerHTML=`<div class="optimization-header"><h3>审核批注</h3><span>${review.findings.length} ITEMS · NO AUTO WRITE</span></div>${review.findings.length?review.findings.map(item=>`<article class="finding-card"><div class="finding-heading"><strong>${escapeHtml(item.title)}</strong><span class="finding-severity ${item.severity}">${{critical:"优先修正",warning:"需要复核",suggestion:"优化建议"}[item.severity]}</span></div><p>${escapeHtml(item.observation)}</p><p class="finding-action">建议：${escapeHtml(item.recommendation)}</p>${item.question_to_user?`<p>待补证：${escapeHtml(item.question_to_user)}</p>`:""}</article>`).join(""):'<div class="score-sheet-placeholder"><span>REVIEW / CLEAR</span><p>没有发现需要立即处理的问题。</p></div>'}`;
+  $("#reviewScoreboard").innerHTML=`<div class="review-score-head"><div class="review-score-number"><strong>${review.overall_score}</strong><span>${review.grade} 级</span></div><div><h3>${escapeHtml(review.target_role||"通用简历检查")}</h3><p>${review.ai_used?"结合岗位语义和填写规则检查":"按填写规则检查"} · 原档案未修改</p></div></div><div class="dimension-ledger">${dimensions}</div>${strengths}${questions}`;
+  $("#editorialLedger").innerHTML=`<div class="optimization-header"><h3>检查结果</h3><span>${review.findings.length} 条 · 不会自动改写</span></div>${review.findings.length?review.findings.map(item=>`<article class="finding-card"><div class="finding-heading"><strong>${escapeHtml(item.title)}</strong><span class="finding-severity ${item.severity}">${{critical:"优先修正",warning:"需要复核",suggestion:"修改建议"}[item.severity]}</span></div><p>${escapeHtml(item.observation)}</p><p class="finding-action">建议：${escapeHtml(item.recommendation)}</p>${item.question_to_user?`<p>待补充：${escapeHtml(item.question_to_user)}</p>`:""}</article>`).join(""):'<div class="score-sheet-placeholder"><span>检查完成</span><p>没有发现需要立即处理的问题。</p></div>'}`;
 }
 
 async function reviewResume(){
@@ -167,7 +347,7 @@ async function reviewResume(){
 function renderOptimization(result){
   currentOptimization=result;
   const cards=result.suggestions.map((item,index)=>`<article class="revision-card"><div class="revision-meta"><code>${escapeHtml(item.field_path)}</code><span>${escapeHtml(item.change_type)}</span></div><div class="revision-compare"><div><b>原文</b><p>${escapeHtml(item.original_text||"（当前为空）")}</p></div><div><b>建议稿</b><p>${escapeHtml(item.suggested_text)}</p></div></div><p class="revision-reason">${escapeHtml(item.rationale)}</p><button class="copy-revision" type="button" data-revision-index="${index}">复制建议稿</button></article>`).join("");
-  $("#editorialLedger").innerHTML=`<div class="optimization-header"><h3>待确认修订</h3><span>${result.suggestions.length} ITEMS · ${result.ai_used?"AI + RULES":"RULES"}</span></div>${cards||'<div class="score-sheet-placeholder"><span>EDIT / CLEAR</span><p>当前没有可安全生成的优化文本；请先补充审核提出的事实证据。</p></div>'}`;
+  $("#editorialLedger").innerHTML=`<div class="optimization-header"><h3>待确认的修改</h3><span>${result.suggestions.length} 条</span></div>${cards||'<div class="score-sheet-placeholder"><span>暂无建议</span><p>请先补充检查中提到的事实和证据。</p></div>'}`;
 }
 
 async function optimizeResume(){
@@ -202,8 +382,8 @@ function renderDiscovery(d){
   $("#sourceMetric").textContent=d.source_count; $("#officialMetric").textContent=d.live_or_hub_entry_count; $("#enterpriseMetric").textContent=d.enterprises.length;
   $("#queueCount").textContent=d.enterprises.length; $("#queueSummary").textContent=`${d.live_or_hub_entry_count} 家有官网入口 · ${d.ai_ranking_used?"LLM 已参与排序":"规则排序"}`;
   const bases=splitValues(value("baseLocations"));
-  $("#destinationList").innerHTML=`<div class="base-card"><span class="base-label">BASE COMPASS</span><div class="base-chips">${bases.map((b,i)=>`<span>${String(i+1).padStart(2,"0")} · ${escapeHtml(b)}</span>`).join("")||"<span>未指定</span>"}</div></div>
-    <div class="query-ledger"><strong>AI 查询计划</strong>${d.query_plan.map((q,i)=>`<p><span>Q${i+1}</span>${escapeHtml(q)}</p>`).join("")}</div>
+  $("#destinationList").innerHTML=`<div class="base-card"><span class="base-label">搜索城市</span><div class="base-chips">${bases.map((b,i)=>`<span>${String(i+1).padStart(2,"0")} · ${escapeHtml(b)}</span>`).join("")||"<span>未指定</span>"}</div></div>
+    <div class="query-ledger"><strong>本轮搜索词</strong>${d.query_plan.map((q,i)=>`<p><span>${i+1}</span>${escapeHtml(q)}</p>`).join("")}</div>
     ${d.warnings.length?`<div class="source-warning">部分来源降级：${escapeHtml(d.warnings.join("；"))}</div>`:""}`;
   if(!d.enterprises.length){ $("#enterpriseList").innerHTML='<div class="empty-state"><h3>没有找到可核验线索</h3><p>可以放宽企业类型或增加 Base 城市后重试。</p></div>'; return; }
   $("#enterpriseList").innerHTML=d.enterprises.map((lead,index)=>enterpriseCard(lead,index)).join("");
@@ -218,7 +398,7 @@ function enterpriseCard(lead,index){
     <div class="company-line"><h3>${String(index+1).padStart(2,"0")} · ${escapeHtml(lead.company)}</h3><span class="authority ${lead.source_authority}">${authority}</span><span class="entry-readiness ${lead.application_readiness}">${readiness}</span></div>
     <p class="job-title">${escapeHtml(lead.source_title)}</p><p class="lead-rationale">${escapeHtml(lead.rationale)}</p>
     <div class="enterprise-meta"><span>Base ${escapeHtml(lead.bases.slice(0,4).join(" / ")||"待核对")}</span><span>匹配分 ${lead.score.toFixed(0)}</span><span>${selected?escapeHtml(selected.label):"暂无可投官网"}</span>${lead.recommended_roles.slice(0,2).map(x=>`<span class="skill-token">${escapeHtml(x)}</span>`).join("")}</div>
-  </div><div class="draft-actions"><span class="draft-status ${selected?"is-ready":""}">${selected?"AI VERIFY":"BLOCKED"}</span><button class="takeover-button" id="lead-${index}" type="button" ${selected?"":"disabled"}>${selected?"AI 核岗 · 接管官网":"暂无可投渠道"}</button></div></article>`;
+  </div><div class="draft-actions"><span class="draft-status ${selected?"is-ready":""}">${selected?"可继续":"暂不可用"}</span><button class="takeover-button" id="lead-${index}" type="button" ${selected?"":"disabled"}>${selected?"核对岗位并打开官网":"暂无可用入口"}</button></div></article>`;
 }
 
 function chooseBestChannel(lead){
@@ -243,7 +423,7 @@ function startAiTakeover(lead,index){
   button.disabled=true; button.textContent=simulationOnly?"正在启动官网安全预演…":"正在交给浏览器副驾驶…";
   const requestId=crypto.randomUUID();
   pendingTakeovers.set(requestId,{button,simulationOnly,timer:setTimeout(()=>{
-    pendingTakeovers.delete(requestId); button.disabled=false; button.textContent="AI 核岗 · 接管官网";
+    pendingTakeovers.delete(requestId); button.disabled=false; button.textContent="核对岗位并打开官网";
         showToast("未检测到浏览器副驾驶。请在浏览器右上角点击扩展图标，确认副驾驶已加载后重试。");
   },4000)});
   window.postMessage({
@@ -267,12 +447,12 @@ window.addEventListener("message",event=>{
   const pending=pendingTakeovers.get(event.data.requestId); if(!pending)return;
   clearTimeout(pending.timer); pendingTakeovers.delete(event.data.requestId);
   if(event.data.ok){
-    pending.button.textContent=pending.simulationOnly?"AI 官网预演中":"AI 已接管";
+    pending.button.textContent=pending.simulationOnly?"正在预览官网流程":"官网已打开";
     showToast(pending.simulationOnly
       ?"合成档案已进入官网安全预演：只核岗并前往登录/申请页，不发送验证码、不填表、不提交"
       :"招聘网站已打开。请您先登录并进入要投递的岗位，等到出现需要填写简历信息的页面时，再点击浏览器右上角的扩展图标打开副驾驶。");
   }else{
-    pending.button.disabled=false; pending.button.textContent="AI 核岗 · 接管官网";
+    pending.button.disabled=false; pending.button.textContent="核对岗位并打开官网";
     showToast(event.data.error||"浏览器副驾驶未能接管");
   }
 });
@@ -295,17 +475,28 @@ function renderPortalTemplate(t){
 
 function policyLabel(policy){return {master_resume:"主简历",portal_only:"仅门户",prepare_only:"只准备"}[policy]||policy;}
 function renderError(message){ $("#enterpriseList").innerHTML=`<div class="empty-state"><h3>这轮没有完成</h3><p>${escapeHtml(message)}</p></div>`; $("#destinationList").innerHTML='<div class="empty-state compact-empty"><p>保留当前简历，稍后可重试。</p></div>'; $("#queueSummary").textContent="搜索失败"; }
-function resetDiscovery(){ currentDiscovery=null; currentSessionId=null; ["sourceMetric","officialMetric","enterpriseMetric"].forEach(id=>$(`#${id}`).textContent="—"); $("#queueCount").textContent="0"; $("#queueSummary").textContent="还没有 AI 投递任务"; $("#missingCount").textContent="待运行"; $("#missingList").innerHTML='<span class="muted-copy">搜索后显示缺失项</span>'; $("#destinationList").innerHTML='<div class="empty-state compact-empty"><span class="empty-rule"></span><p>Base 城市与 AI 查询计划会在这里留下证据。</p></div>'; $("#enterpriseList").innerHTML='<div class="empty-state"><span class="folder-tab">QUEUE / 00</span><h3>等待企业检索</h3><p>系统会选择官方渠道，并在逐岗位确认后接管投递。</p></div>'; }
+function resetDiscovery(){ currentDiscovery=null; ["sourceMetric","officialMetric","enterpriseMetric"].forEach(id=>$(`#${id}`).textContent="—"); $("#queueCount").textContent="0"; $("#queueSummary").textContent="还没有企业搜索结果"; $("#destinationList").innerHTML='<div class="empty-state compact-empty"><span class="empty-rule"></span><p>搜索范围和来源会显示在这里。</p></div>'; $("#enterpriseList").innerHTML='<div class="empty-state"><span class="folder-tab">尚无结果</span><h3>还没有搜索企业</h3><p>保存档案后，可以按目标岗位和城市查找企业招聘入口。</p></div>'; }
 
 function resetReviewDesk(){
   currentReview=null; currentOptimization=null;
   $("#reviewGrade").textContent="待审核"; $("#reviewGrade").classList.remove("is-reviewed");
-  $("#reviewScoreboard").innerHTML='<div class="score-sheet-placeholder"><span>REVIEW / 00</span><p>运行审核后，这里会显示六维评分、问题证据和待确认修订。</p></div>';
-  $("#editorialLedger").innerHTML='<div class="score-sheet-placeholder"><span>EDIT / 00</span><p>优化建议会保留原文对照，不会写回简历模板。</p></div>';
+  $("#reviewScoreboard").innerHTML='<div class="score-sheet-placeholder"><span>等待检查</span><p>检查后，这里会显示完整度、相关性和需要补充的事实。</p></div>';
+  $("#editorialLedger").innerHTML='<div class="score-sheet-placeholder"><span>等待建议</span><p>修改建议会保留原文对照，不会直接写回档案。</p></div>';
 }
 function jumpPortal(){ $("#portalMatrix").scrollIntoView({behavior:"smooth"}); if(!$("#portalEvidence").textContent.trim()) loadPortalTemplate(); }
 function showToast(message){ clearTimeout(toastTimer); $("#toast").textContent=message; $("#toast").classList.add("is-visible"); toastTimer=setTimeout(()=>$("#toast").classList.remove("is-visible"),3800); }
 function escapeHtml(input){return String(input??"").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));}
+
+function goToWorkflow(targetId, stage=null) {
+  const target = document.getElementById(targetId);
+  if (!target) return;
+  document.querySelectorAll(".rail-step").forEach((step) => step.classList.remove("is-active"));
+  const active = stage === 2 ? $("#railJob") : stage === 3 ? $("#railBoard") : $("#railResume");
+  active?.classList.add("is-active");
+  target.scrollIntoView({behavior:"smooth", block:"start"});
+  const first = target.querySelector("input, textarea, select, button");
+  setTimeout(() => first?.focus({preventScroll:true}), 350);
+}
 
 function careerInput(){
   return {
@@ -315,9 +506,8 @@ function careerInput(){
 }
 
 async function ensureCareerSession(force=false){
-  if(careerState.sessionId&&!force)return careerState.sessionId;
-  const resume=collectResume(); renderMissing(localMissing(resume)); renderCompletenessNotice(resume);
-  const session=await requestJson("/api/sessions",{method:"POST",body:JSON.stringify({resume,preferred_locations:resume.base_locations,remote_preference:"any"})});
+  if(careerState.sessionId&&!force&&!profileDirty)return careerState.sessionId;
+  const session=await ensureProfileSession({requireComplete:true});
   careerState.sessionId=session.id;
   if(force){careerState.versionId=null;careerState.applicationId=null;}
   return session.id;
@@ -334,7 +524,7 @@ function renderCareerDossier(dossier,ranking){
   const requirements=dossier.requirements.slice(0,12).map(item=>`<div class="requirement-row ${item.matched?"is-matched":""}"><b>${escapeHtml(item.kind)}</b><i></i><div>${escapeHtml(item.text)}<small>${item.matched?`证据：${escapeHtml(item.evidence_paths.join(" / "))}`:escapeHtml(item.gap_reason||"待补证")}</small></div></div>`).join("");
   const ranked=ranking?.ranked_jobs?.[0];
   const risks=dossier.risk_signals.length?dossier.risk_signals.map(item=>escapeHtml(item.title)).join("；"):"未发现明显招聘诈骗信号";
-  $("#careerDossierBody").innerHTML=`<div class="dossier-score-line"><div class="match-seal"><strong>${dossier.match_score}</strong><span>MATCH</span></div><div><h4>${escapeHtml(dossier.company)} · ${escapeHtml(dossier.title)}</h4><p>${escapeHtml(dossier.rationale)}</p><p>投递价值 ${ranked?.score??"—"} · Base ${ranked?.base_score??"—"} · 渠道 ${ranked?.channel_score??"—"} · ${actionLabel}</p></div></div><div class="requirement-ledger">${requirements}</div><div class="risk-strip ${dossier.recommended_action==="block"?"is-blocked":""}">${risks}</div>`;
+  $("#careerDossierBody").innerHTML=`<div class="dossier-score-line"><div class="match-seal"><strong>${dossier.match_score}</strong><span>匹配度</span></div><div><h4>${escapeHtml(dossier.company)} · ${escapeHtml(dossier.title)}</h4><p>${escapeHtml(dossier.rationale)}</p><p>投递价值 ${ranked?.score??"—"} · 城市 ${ranked?.base_score??"—"} · 来源 ${ranked?.channel_score??"—"} · ${actionLabel}</p></div></div><div class="requirement-ledger">${requirements}</div><div class="risk-strip ${dossier.recommended_action==="block"?"is-blocked":""}">${risks}</div>`;
   $("#careerOSStamp").textContent=`${actionLabel} / ${dossier.match_score}`; $("#careerOSStamp").classList.add("is-ready");
 }
 
@@ -345,13 +535,11 @@ async function buildCareerDossier(){
     const dossier=await requestJson("/api/career/job-dossier",{method:"POST",body:JSON.stringify({session_id:sessionId,...input})});
     const ranking=await requestJson("/api/career/jobs/rank",{method:"POST",body:JSON.stringify({session_id:sessionId,jobs:[{id:"current-job",...input,source:"official",application_minutes:20}]})});
     renderCareerDossier(dossier,ranking); showToast(`岗位作战包完成：匹配 ${dossier.match_score}，${dossier.hard_gaps.length} 条硬性条件待核验`);
-    }catch(error){
-    let friendly = error.message;
-    if (error.message.includes("422") || error.message.includes("请求失败")) {
-      friendly = "请先填写真实企业名称、岗位名称、官网投递URL和岗位JD，再生成岗位作战包。";
-    }
-    $("#careerDossierBody").innerHTML=`<div class="career-alert">${escapeHtml(friendly)}</div>`;
-    showToast(friendly);
+    $("#railJobStatus").textContent=`已分析：匹配度 ${dossier.match_score}`;
+    $("#railJob").classList.add("is-complete");
+  }catch(error){
+    $("#careerDossierBody").innerHTML=`<div class="career-alert">${escapeHtml(error.message)}</div>`;
+    showToast(error.message);
   }
   finally{setCareerBusy(button,false,"");}
 }
@@ -359,7 +547,7 @@ async function buildCareerDossier(){
 function renderCareerVersion(version,audit){
   const changes=version.changes.length?version.changes.map(item=>`<div class="version-change"><code>${escapeHtml(item.field_path)}</code><p>${escapeHtml(item.reason)}</p><p>${escapeHtml(item.before||"（空）")} → ${escapeHtml(item.after||"（空）")}</p></div>`).join(""):'<div class="version-change"><p>当前岗位与母版顺序已一致，没有为了制造差异而改写内容。</p></div>';
   const auditText=audit.findings.map(item=>item.message).join("；");
-  $("#careerVersionBody").innerHTML=`<div class="version-card"><div class="version-head"><strong>${escapeHtml(version.label)}</strong><span>${audit.passed?"FACTS STABLE":"REVIEW REQUIRED"}</span></div>${changes}<div class="audit-pass">${escapeHtml(auditText)}</div></div>`;
+  $("#careerVersionBody").innerHTML=`<div class="version-card"><div class="version-head"><strong>${escapeHtml(version.label)}</strong><span>${audit.passed?"事实一致":"需要复核"}</span></div>${changes}<div class="audit-pass">${escapeHtml(auditText)}</div></div>`;
 }
 
 async function createCareerVersion(){
@@ -370,12 +558,8 @@ async function createCareerVersion(){
     const audit=await requestJson(`/api/career/resume-versions/${encodeURIComponent(version.id)}/audit?session_id=${encodeURIComponent(sessionId)}`,{method:"POST"});
     careerState.versionId=version.id;renderCareerVersion(version,audit);showToast(`岗位版本已生成：${version.changes.length} 项顺序调整，事实母版未修改`);
   }catch(error){
-    let friendly = error.message;
-    if (error.message.includes("422") || error.message.includes("请求失败")) {
-      friendly = "请先填写真实企业名称、岗位名称、官网投递URL和岗位JD，再生成一岗一简历。";
-    }
-    $("#careerVersionBody").innerHTML=`<div class="career-alert">${escapeHtml(friendly)}</div>`;
-    showToast(friendly);
+    $("#careerVersionBody").innerHTML=`<div class="career-alert">${escapeHtml(error.message)}</div>`;
+    showToast(error.message);
   }finally{
     setCareerBusy(button,false,"");
   }
@@ -384,7 +568,7 @@ async function createCareerVersion(){
 function renderPortalPreflight(result,checkpoint=null){
   const checks=result.checklist.map(item=>`<div class="preflight-check">${escapeHtml(item)}</div>`).join("");
   const blockers=[...result.missing_required_fields,...result.blocked_sensitive_fields,...result.attachment_checks];
-  $("#careerPortalBody").innerHTML=`<div class="version-head"><strong>${escapeHtml(result.adapter.name)}</strong><span>${result.ready?"READY FOR CONFIRMATION":"BLOCKED"}</span></div><div class="preflight-checks">${checks}</div>${blockers.length?`<div class="career-alert">阻塞项：${escapeHtml(blockers.join("；"))}</div>`:'<div class="audit-pass">字段与附件检查通过；仍需用户逐岗位确认后才可继续官网提交。</div>'}${checkpoint?`<div class="audit-pass">断点 ${escapeHtml(checkpoint.step)} 已保存，24 小时内可从 ${checkpoint.pending_fields.length} 个待填字段继续。</div>`:""}`;
+  $("#careerPortalBody").innerHTML=`<div class="version-head"><strong>${escapeHtml(result.adapter.name)}</strong><span>${result.ready?"可以继续确认":"暂时不能继续"}</span></div><div class="preflight-checks">${checks}</div>${blockers.length?`<div class="career-alert">需要先处理：${escapeHtml(blockers.join("；"))}</div>`:'<div class="audit-pass">字段和附件检查通过；最终提交仍需要你本人确认。</div>'}${checkpoint?`<div class="audit-pass">填写进度已保存，24 小时内可以从 ${checkpoint.pending_fields.length} 个待填字段继续。</div>`:""}`;
 }
 
 async function runPortalPreflight(){
@@ -413,23 +597,50 @@ const careerStatusLabels={saved:"已收藏",preparing:"准备中",ready:"待投�
 
 async function refreshCareerApplications(){
   if(!careerState.sessionId)return;
-  const [apps,reminders,funnel]=await Promise.all([
+  const [apps,reminders,funnel,versions]=await Promise.all([
     requestJson(`/api/career/applications?session_id=${encodeURIComponent(careerState.sessionId)}`),
     requestJson(`/api/career/reminders?session_id=${encodeURIComponent(careerState.sessionId)}`),
-    requestJson(`/api/career/funnel?session_id=${encodeURIComponent(careerState.sessionId)}`)
+    requestJson(`/api/career/funnel?session_id=${encodeURIComponent(careerState.sessionId)}`),
+    requestJson(`/api/career/resume-versions?session_id=${encodeURIComponent(careerState.sessionId)}`)
   ]);
-  const cards=apps.map(app=>`<div class="application-card"><div class="application-head"><strong>${escapeHtml(app.company)} · ${escapeHtml(app.title)}</strong><span>${careerStatusLabels[app.status]}</span></div><p>${app.resume_version_id?`岗位版本 ${escapeHtml(app.resume_version_id)}`:"尚未绑定岗位版本"} · ${app.deadline?`截止 ${escapeHtml(app.deadline)}`:"无截止日期"}</p><div class="application-statuses">${["saved","preparing","ready","applied","assessment","interview","offer","rejected"].map(status=>`<button type="button" data-app-id="${app.id}" data-app-status="${status}" class="${app.status===status?"is-active":""}">${careerStatusLabels[status]}</button>`).join("")}</div></div>`).join("");
+  careerState.applications=apps;
+  const versionLabels=new Map(versions.map((item)=>[item.id,item.label]));
+  const cards=apps.map(app=>`<div class="application-card"><div class="application-head"><strong>${escapeHtml(app.company)} · ${escapeHtml(app.title)}</strong><span>${careerStatusLabels[app.status]}</span></div><p>${app.resume_version_id?`岗位版简历：${escapeHtml(versionLabels.get(app.resume_version_id)||app.resume_version_id)}`:"尚未生成岗位版简历"} · ${app.deadline?`截止 ${escapeHtml(app.deadline)}`:"无截止日期"}</p><button class="application-open" type="button" data-app-open="${app.id}">继续处理这个岗位</button><div class="application-statuses">${["saved","preparing","ready","applied","assessment","interview","offer","rejected"].map(status=>`<button type="button" data-app-id="${app.id}" data-app-status="${status}" class="${app.status===status?"is-active":""}">${careerStatusLabels[status]}</button>`).join("")}</div></div>`).join("");
   const max=Math.max(1,...funnel.stages.map(item=>item.count));
   const funnelHtml=funnel.stages.filter(item=>item.count).map(item=>`<div class="funnel-line"><span>${careerStatusLabels[item.status]}</span><div class="funnel-rule"><i style="--funnel-width:${item.count/max*100}%"></i></div><b>${item.count}</b></div>`).join("");
   $("#careerApplicationBody").innerHTML=`<div class="application-list">${cards||'<div class="career-placeholder">尚未加入投递任务。</div>'}</div>${reminders.length?`<div class="audit-pass">最近提醒：${escapeHtml(reminders[0].title)} · ${new Date(reminders[0].due_at).toLocaleString("zh-CN")}</div>`:""}<div>${funnelHtml}</div><div class="audit-pass">响应率 ${funnel.response_rate}% · 面试率 ${funnel.interview_rate}% · Offer 率 ${funnel.offer_rate}%<br>${escapeHtml(funnel.recommendations.join("；"))}</div>`;
+  if (apps.length) {
+    careerState.applicationId ||= apps[0].id;
+    $("#railBoardStatus").textContent=`${apps.length} 个岗位正在跟踪`;
+    $("#railBoard").classList.add("is-complete");
+  } else {
+    $("#railBoardStatus").textContent="还没有投递记录";
+    $("#railBoard").classList.remove("is-complete");
+  }
+  return apps;
+}
+
+function openCareerApplication(applicationId){
+  const app=careerState.applications.find((item)=>item.id===applicationId);
+  if(!app)return;
+  careerState.applicationId=app.id;careerState.versionId=app.resume_version_id;
+  setField("careerCompany",app.company);setField("careerTitle",app.title);setField("careerLocation",app.location);
+  setField("careerUrl",app.url);setField("careerDeadline",app.deadline);setField("careerJD",app.job_description);
+  $("#careerOSStamp").textContent=`${careerStatusLabels[app.status]} · 继续处理`;$("#careerOSStamp").classList.add("is-ready");
+  if(app.resume_version_id)$("#careerVersionBody").innerHTML=`<div class="audit-pass">已恢复这个岗位使用的简历版本。需要更新时，可以重新生成岗位版简历。</div>`;
+  goToWorkflow("careerOS",2);showToast("已恢复这个岗位的信息");
 }
 
 async function trackCareerApplication(){
   const button=$("#trackCareerApplicationButton");setCareerBusy(button,true,"正在登记时间线…");
   try{
     const sessionId=await ensureCareerSession();const input=careerInput();
-    const app=await requestJson("/api/career/applications",{method:"POST",body:JSON.stringify({session_id:sessionId,company:input.company,title:input.title,url:input.url||"",location:input.location||"",status:"ready",resume_version_id:careerState.versionId,job_description:input.description,deadline:input.deadline})});
-    careerState.applicationId=app.id;await refreshCareerApplications();showToast("岗位已加入投递看板；尚未向官网发送");
+    const existing=await requestJson(`/api/career/applications?session_id=${encodeURIComponent(sessionId)}`);
+    const duplicate=existing.find((item)=>item.company.trim().toLowerCase()===input.company.trim().toLowerCase()&&item.title.trim().toLowerCase()===input.title.trim().toLowerCase());
+    const app=duplicate||await requestJson("/api/career/applications",{method:"POST",body:JSON.stringify({session_id:sessionId,company:input.company,title:input.title,url:input.url||"",location:input.location||"",status:"ready",resume_version_id:careerState.versionId,job_description:input.description,deadline:input.deadline})});
+    careerState.applicationId=app.id;await refreshCareerApplications();
+    showToast(duplicate?"这个岗位已经在投递看板中":"岗位已加入投递看板；尚未向官网发送");
+    goToWorkflow("careerApplicationBoard",3);
   }catch(error){showToast(error.message);}
   finally{setCareerBusy(button,false,"");}
 }
@@ -458,7 +669,7 @@ async function simulateInterview(){
 async function refreshCareerEvidence(){
   if(!careerState.sessionId)return;
   const [items,vault]=await Promise.all([requestJson(`/api/career/evidence?session_id=${encodeURIComponent(careerState.sessionId)}`),requestJson(`/api/career/vault?session_id=${encodeURIComponent(careerState.sessionId)}`)]);
-  const cards=items.map(item=>`<div class="evidence-card"><div class="evidence-head"><strong>${escapeHtml(item.label)}</strong><span>${item.verified_by_user?"USER VERIFIED":"PENDING"}</span></div><ul>${item.facts.map(fact=>`<li>${escapeHtml(fact)}</li>`).join("")}</ul></div>`).join("");
+  const cards=items.map(item=>`<div class="evidence-card"><div class="evidence-head"><strong>${escapeHtml(item.label)}</strong><span>${item.verified_by_user?"本人确认":"待确认"}</span></div><ul>${item.facts.map(fact=>`<li>${escapeHtml(fact)}</li>`).join("")}</ul></div>`).join("");
   $("#careerEvidenceBody").innerHTML=`<div class="evidence-list">${cards||'<div class="career-placeholder">尚未登记可引用证据。</div>'}</div><div class="audit-pass">保险箱：${vault.encrypted_items} 个加密字段（${escapeHtml(vault.fields.join(" / ")||"空")}）；列表接口不返回明文。</div>`;
 }
 
@@ -474,12 +685,90 @@ async function saveCareerVault(){
   try{const sessionId=await ensureCareerSession();const field=$("#vaultField").value;const secret=value("vaultValue");if(!secret)throw new Error("请先填写字段值");await requestJson("/api/career/vault",{method:"POST",body:JSON.stringify({session_id:sessionId,values:{[field]:secret}})});$("#vaultValue").value="";await refreshCareerEvidence();showToast("敏感字段已加密；明文不会出现在列表或模型上下文");}catch(error){showToast(error.message);}finally{setCareerBusy(button,false,"");}
 }
 
-function resetCareerOS(){
-  Object.assign(careerState,{sessionId:null,dossier:null,versionId:null,applicationId:null,interviewKit:null});
+function resetCareerOS(keepSession=false){
+  const sessionId=keepSession ? careerState.sessionId : null;
+  const applications=keepSession ? careerState.applications : [];
+  Object.assign(careerState,{sessionId,dossier:null,versionId:null,applicationId:null,interviewKit:null,applications});
   $("#careerOSStamp").textContent="等待岗位";$("#careerOSStamp").classList.remove("is-ready");
 }
 
+function applyResumeToForm(resume) {
+  const fieldMap = {
+    fullName:resume.full_name, preferredName:resume.preferred_name, city:resume.city,
+    professionalHeadline:resume.professional_headline, email:resume.email, phone:resume.phone,
+    wechat:resume.wechat, jobSeekingStatus:resume.job_seeking_status,
+    targetRoles:(resume.target_roles || []).join(", "), targetIndustries:(resume.target_industries || []).join(", "),
+    targetEmployerTypes:(resume.target_employer_types || []).join(", "), baseLocations:(resume.base_locations || []).join(", "),
+    employmentTypes:(resume.employment_types || []).join(", "), yearsExperience:resume.years_experience,
+    availableDate:resume.available_date, expectedSalary:resume.expected_salary,
+    relocationPreference:resume.relocation_preference, skills:(resume.skills || []).join(", "),
+    summary:resume.summary, hobbies:(resume.hobbies || []).join(", "),
+    selfEvaluation:resume.self_evaluation, additionalInformation:resume.additional_information,
+  };
+  Object.entries(fieldMap).forEach(([id, fieldValue]) => setField(id, fieldValue));
+
+  const education=resume.education?.[0] || {};
+  const educationMap={school:education.school,college:education.college,major:education.major,minor:education.minor,degree:education.degree,
+    educationType:education.education_type,educationStartDate:education.start_date,educationEndDate:education.end_date,
+    graduationYear:education.graduation_year,educationLocation:education.location,gpa:education.gpa,gpaScale:education.gpa_scale,
+    rank:education.rank,coreCourses:(education.core_courses||[]).join(", "),thesis:education.thesis};
+  Object.entries(educationMap).forEach(([id, fieldValue]) => setField(id, fieldValue));
+  renderWorkEntries(resume.work_experience || []);
+  renderProjectEntries(resume.projects || []);
+
+  const campus=resume.campus_experience?.[0]||{};setField("campusOrganization",campus.organization);setField("campusRole",campus.role);setField("campusDescription",campus.description);
+  const certificate=resume.certificates?.[0]||{};setField("certificateName",certificate.name);setField("certificateIssuer",certificate.issuer);setField("certificateScore",certificate.score);
+  const language=resume.language_details?.[0]||{};setField("language",language.language);setField("languageProficiency",language.proficiency);setField("languageTest",language.test_name);setField("languageScore",language.score);
+  setField("awardName",resume.awards?.[0]?.name);
+}
+
+async function restoreLastSession() {
+  try {
+    const sessions=await requestJson("/api/sessions");
+    if(!sessions.length){updateProfileProgress();return;}
+    const remembered=localStorage.getItem("lastSessionId");
+    const session=sessions.find((item)=>item.id===remembered)||sessions[0];
+    applyResumeToForm(session.resume);
+    currentSessionId=session.id;
+    careerState.sessionId=session.id;
+    localStorage.setItem("lastSessionId",session.id);
+    profileDirty=false;
+    setProfileSaveState("saved",`已保存 ${new Date(session.updated_at).toLocaleTimeString("zh-CN",{hour:"2-digit",minute:"2-digit"})}`);
+    updateProfileProgress(session.resume);
+    await refreshCareerApplications();
+    showToast("已打开上次保存的档案");
+  } catch(error) {
+    setProfileSaveState("error","暂时无法恢复");
+  }
+}
+
+function addRepeatableEntry(type) {
+  if(type==="work") renderWorkEntries([...collectWorkEntries(true),{}]);
+  else renderProjectEntries([...collectProjectEntries(true),{}]);
+}
+
+function removeRepeatableEntry(button) {
+  const type=button.dataset.removeEntry;
+  const entry=button.closest(".repeatable-entry");
+  const index=[...entry.parentElement.children].indexOf(entry);
+  if(type==="work"){
+    const items=collectWorkEntries(true);items.splice(index,1);renderWorkEntries(items);
+  }else{
+    const items=collectProjectEntries(true);items.splice(index,1);renderProjectEntries(items);
+  }
+  profileDirty=true;setProfileSaveState("dirty","有未保存修改");updateProfileProgress();
+}
+
+renderWorkEntries();
+renderProjectEntries();
 $("#runCampaignButton").addEventListener("click",runDiscovery);
+$("#saveProfileButton").addEventListener("click",()=>saveProfile(true));
+$("#saveProfileTopButton").addEventListener("click",()=>saveProfile(false));
+$("#addWorkButton").addEventListener("click",()=>addRepeatableEntry("work"));
+$("#addProjectButton").addEventListener("click",()=>addRepeatableEntry("project"));
+$("#workEntries").addEventListener("click",event=>{const button=event.target.closest("[data-remove-entry]");if(button)removeRepeatableEntry(button);});
+$("#projectEntries").addEventListener("click",event=>{const button=event.target.closest("[data-remove-entry]");if(button)removeRepeatableEntry(button);});
+document.querySelectorAll("[data-workflow-target]").forEach((button,index)=>button.addEventListener("click",()=>goToWorkflow(button.dataset.workflowTarget,index+1)));
 $("#reviewResumeButton").addEventListener("click",reviewResume);
 $("#optimizeResumeButton").addEventListener("click",optimizeResume);
 $("#buildCareerDossierButton").addEventListener("click",buildCareerDossier);
@@ -491,127 +780,18 @@ $("#saveCheckpointButton").addEventListener("click",saveCareerCheckpoint);
 $("#simulateInterviewButton").addEventListener("click",simulateInterview);
 $("#addEvidenceButton").addEventListener("click",addCareerEvidence);
 $("#saveVaultButton").addEventListener("click",saveCareerVault);
-$("#careerApplicationBody").addEventListener("click",event=>{const button=event.target.closest("[data-app-status]");if(button)updateCareerApplication(button.dataset.appId,button.dataset.appStatus).catch(error=>showToast(error.message));});
-$("#editorialLedger").addEventListener("click",event=>{ const button=event.target.closest("[data-revision-index]"); if(button)copyRevision(Number(button.dataset.revisionIndex)); });
-$("#resumeForm").addEventListener("input",()=>{ if(currentReview||currentOptimization){ $("#reviewGrade").textContent="待重新审核"; $("#reviewGrade").classList.remove("is-reviewed"); } resetCareerOS(); });
+$("#careerApplicationBody").addEventListener("click",event=>{const statusButton=event.target.closest("[data-app-status]");if(statusButton){updateCareerApplication(statusButton.dataset.appId,statusButton.dataset.appStatus).catch(error=>showToast(error.message));return;}const openButton=event.target.closest("[data-app-open]");if(openButton)openCareerApplication(openButton.dataset.appOpen);});
+$("#editorialLedger").addEventListener("click",event=>{const button=event.target.closest("[data-revision-index]");if(button)copyRevision(Number(button.dataset.revisionIndex));});
+document.addEventListener("input",event=>{const field=event.target.closest?.("input, textarea, select");if(!field)return;field.removeAttribute("aria-invalid");field.classList.remove("is-invalid");});
+$("#resumeForm").addEventListener("input",()=>{profileDirty=true;setProfileSaveState("dirty","有未保存修改");updateProfileProgress();if(currentReview||currentOptimization){$("#reviewGrade").textContent="待重新检查";$("#reviewGrade").classList.remove("is-reviewed");}resetCareerOS(true);});
 $("#portalActionButton").addEventListener("click",loadPortalTemplate);
-$("#portalLinkButton").addEventListener("click",jumpPortal); $("#portalJumpButton").addEventListener("click",jumpPortal);
-checkHealth(); loadPortalTemplate();
-const careerDeadline=new Date();careerDeadline.setDate(careerDeadline.getDate()+14);$("#careerDeadline").value=careerDeadline.toISOString().slice(0,10);
+$("#portalLinkButton").addEventListener("click",jumpPortal);$("#portalJumpButton").addEventListener("click",jumpPortal);
+$("#logoutButton").addEventListener("click",logoutAccount);
 
-async function restoreLastSession() {
-  const sessionId = localStorage.getItem("lastSessionId");
-  if (!sessionId) return;
-
-  try {
-    const session = await requestJson(`/api/sessions/${sessionId}`);
-    const resume = session.resume;
-
-    setField("fullName", resume.full_name);
-    setField("preferredName", resume.preferred_name);
-    setField("city", resume.city);
-    setField("professionalHeadline", resume.professional_headline);
-    setField("email", resume.email);
-    setField("phone", resume.phone);
-    setField("wechat", resume.wechat);
-    setField("jobSeekingStatus", resume.job_seeking_status);
-    setField("targetRoles", (resume.target_roles || []).join(","));
-    setField("targetIndustries", (resume.target_industries || []).join(","));
-    setField("targetEmployerTypes", (resume.target_employer_types || []).join(","));
-    setField("baseLocations", (resume.base_locations || []).join(","));
-    setField("employmentTypes", (resume.employment_types || []).join(","));
-    setField("yearsExperience", resume.years_experience);
-    setField("availableDate", resume.available_date);
-    setField("expectedSalary", resume.expected_salary);
-    setField("relocationPreference", resume.relocation_preference);
-    setField("skills", (resume.skills || []).join(","));
-    setField("summary", resume.summary);
-    setField("hobbies", (resume.hobbies || []).join(","));
-    setField("selfEvaluation", resume.self_evaluation);
-    setField("additionalInformation", resume.additional_information);
-
-    // 教育经历
-    if (resume.education && resume.education.length > 0) {
-      const edu = resume.education[0];
-      setField("school", edu.school);
-      setField("college", edu.college);
-      setField("major", edu.major);
-      setField("minor", edu.minor);
-      setField("degree", edu.degree);
-      setField("educationType", edu.education_type);
-      setField("educationStartDate", edu.start_date);
-      setField("educationEndDate", edu.end_date);
-      setField("graduationYear", edu.graduation_year);
-      setField("educationLocation", edu.location);
-      setField("gpa", edu.gpa);
-      setField("gpaScale", edu.gpa_scale);
-      setField("rank", edu.rank);
-      setField("coreCourses", (edu.core_courses || []).join(","));
-      setField("thesis", edu.thesis);
-    }
-
-    // 工作经历
-    if (resume.work_experience && resume.work_experience.length > 0) {
-      const work = resume.work_experience[0];
-      setField("company", work.company);
-      setField("jobTitle", work.title);
-      setField("experienceType", work.experience_type);
-      setField("department", work.department);
-      setField("workLocation", work.location);
-      setField("startDate", work.start_date);
-      setField("endDate", work.end_date);
-      setField("responsibilities", work.responsibilities);
-      setField("highlights", (work.highlights || []).join("\n"));
-      setField("leavingReason", work.leaving_reason);
-    }
-
-    // 项目经历
-    if (resume.projects && resume.projects.length > 0) {
-      const proj = resume.projects[0];
-      setField("projectName", proj.name);
-      setField("projectRole", proj.role);
-      setField("projectStartDate", proj.start_date);
-      setField("projectEndDate", proj.end_date);
-      setField("projectDescription", proj.description);
-      setField("projectHighlights", (proj.highlights || []).join("\n"));
-      setField("projectSkills", (proj.skills || []).join(","));
-    }
-
-    // 校园经历
-    if (resume.campus_experience && resume.campus_experience.length > 0) {
-      const campus = resume.campus_experience[0];
-      setField("campusOrganization", campus.organization);
-      setField("campusRole", campus.role);
-      setField("campusDescription", campus.description);
-    }
-
-    // 证书
-    if (resume.certificates && resume.certificates.length > 0) {
-      const cert = resume.certificates[0];
-      setField("certificateName", cert.name);
-      setField("certificateIssuer", cert.issuer);
-      setField("certificateScore", cert.score);
-    }
-
-    // 语言
-    if (resume.language_details && resume.language_details.length > 0) {
-      const lang = resume.language_details[0];
-      setField("language", lang.language);
-      setField("languageProficiency", lang.proficiency);
-      setField("languageTest", lang.test_name);
-      setField("languageScore", lang.score);
-    }
-
-    // 荣誉奖项
-    if (resume.awards && resume.awards.length > 0) {
-      setField("awardName", resume.awards[0].name);
-    }
-
-    currentSessionId = sessionId;
-    showToast("已恢复上次简历会话", "success");
-  } catch (error) {
-    // 会话不存在时静默忽略
-  }
+async function initializeApp(){
+  const careerDeadline=new Date();careerDeadline.setDate(careerDeadline.getDate()+14);$("#careerDeadline").value=careerDeadline.toISOString().slice(0,10);
+  await loadAccount();
+  await Promise.allSettled([checkHealth(),loadPortalTemplate(),restoreLastSession()]);
 }
 
-setTimeout(restoreLastSession, 500);
+initializeApp();

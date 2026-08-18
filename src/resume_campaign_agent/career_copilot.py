@@ -8,6 +8,7 @@ from collections import Counter, defaultdict
 from copy import deepcopy
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta, timezone
+from pathlib import Path
 from urllib.parse import urlparse
 from uuid import uuid4
 
@@ -205,6 +206,7 @@ def _risk_check(request: RecruitmentRiskRequest) -> RecruitmentRiskResponse:
 
 @dataclass
 class CareerCopilotService:
+    data_dir: str | Path = "data"
     versions: dict[str, ResumeVersion] = field(default_factory=dict)
     applications: dict[str, ApplicationRecord] = field(default_factory=dict)
     checkpoints: dict[str, RecoveryCheckpoint] = field(default_factory=dict)
@@ -213,6 +215,47 @@ class CareerCopilotService:
     vault_leases: dict[str, tuple[str, list[str], datetime]] = field(default_factory=dict)
     _lock: asyncio.Lock = field(default_factory=asyncio.Lock)
     _fernet: Fernet = field(default_factory=lambda: Fernet(Fernet.generate_key()))
+    _data_file: Path = field(init=False)
+
+    def __post_init__(self) -> None:
+        self.data_dir = Path(self.data_dir)
+        self.data_dir.mkdir(parents=True, exist_ok=True)
+        self._data_file = self.data_dir / "career_state.json"
+        self._load_from_disk()
+
+    def _load_from_disk(self) -> None:
+        if not self._data_file.exists():
+            return
+        try:
+            raw = json.loads(self._data_file.read_text(encoding="utf-8"))
+            model_maps = (
+                ("versions", ResumeVersion, self.versions),
+                ("applications", ApplicationRecord, self.applications),
+                ("checkpoints", RecoveryCheckpoint, self.checkpoints),
+                ("evidence_items", EvidenceItem, self.evidence_items),
+            )
+            for key, model, destination in model_maps:
+                for item in raw.get(key, []):
+                    parsed = model.model_validate(item)
+                    destination[parsed.id] = parsed
+        except (OSError, ValueError, TypeError):
+            return
+
+    def _save_to_disk(self) -> None:
+        payload = {
+            "versions": [item.model_dump(mode="json") for item in self.versions.values()],
+            "applications": [item.model_dump(mode="json") for item in self.applications.values()],
+            "checkpoints": [item.model_dump(mode="json") for item in self.checkpoints.values()],
+            "evidence_items": [item.model_dump(mode="json") for item in self.evidence_items.values()],
+        }
+        temporary = self._data_file.with_suffix(".tmp")
+        try:
+            temporary.write_text(
+                json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8"
+            )
+            temporary.replace(self._data_file)
+        except OSError:
+            temporary.unlink(missing_ok=True)
 
     def job_dossier(self, request: JobDossierRequest, session: SessionState) -> JobDossierResponse:
         paths = _resume_paths(session.resume)
@@ -325,6 +368,7 @@ class CareerCopilotService:
         )
         async with self._lock:
             self.versions[version.id] = version
+            self._save_to_disk()
         return version.model_copy(deep=True)
 
     async def list_versions(self, session_id: str) -> list[ResumeVersion]:
@@ -417,6 +461,7 @@ class CareerCopilotService:
         )
         async with self._lock:
             self.applications[record.id] = record
+            self._save_to_disk()
         return record.model_copy(deep=True)
 
     async def list_applications(self, session_id: str) -> list[ApplicationRecord]:
@@ -438,6 +483,7 @@ class CareerCopilotService:
             record.history.append(ApplicationHistoryEvent(
                 at=record.updated_at, from_status=previous, to_status=request.status, note=request.note,
             ))
+            self._save_to_disk()
             return record.model_copy(deep=True)
 
     async def reminders(self, session_id: str) -> list[Reminder]:
@@ -490,6 +536,7 @@ class CareerCopilotService:
         )
         async with self._lock:
             self.checkpoints[checkpoint.id] = checkpoint
+            self._save_to_disk()
         return checkpoint.model_copy(deep=True)
 
     async def latest_checkpoint(self, application_id: str, session_id: str) -> RecoveryCheckpoint | None:
@@ -600,6 +647,7 @@ class CareerCopilotService:
         item = EvidenceItem(id=f"ev_{uuid4().hex[:12]}", created_at=_now(), **request.model_dump())
         async with self._lock:
             self.evidence_items[item.id] = item
+            self._save_to_disk()
         return item.model_copy(deep=True)
 
     async def list_evidence(self, session_id: str) -> list[EvidenceItem]:

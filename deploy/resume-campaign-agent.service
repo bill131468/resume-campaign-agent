@@ -7,7 +7,7 @@ Wants=network-online.target
 Type=simple
 User=resumeagent
 Group=resumeagent
-WorkingDirectory=/opt/resume-campaign-agent
+WorkingDirectory=/var/lib/resume-campaign-agent
 EnvironmentFile=/etc/resume-campaign-agent.env
 Environment=AGENT_HOST=127.0.0.1
 Environment=AGENT_PORT=18010
@@ -22,6 +22,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=read-only
+ReadWritePaths=/var/lib/resume-campaign-agent
 ProtectKernelTunables=true
 ProtectKernelModules=true
 ProtectControlGroups=true

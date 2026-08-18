@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="登录投递作战夹，管理个人简历和求职任务">
+  <title>登录 · 投递作战夹</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/auth.css?v=2">
+</head>
+<body>
+  <div class="auth-shell">
+    <header class="auth-masthead">
+      <a class="auth-brand" href="/login" aria-label="投递作战夹登录页">
+        <span class="auth-brand-mark" aria-hidden="true">RC</span>
+        <span><strong>投递作战夹</strong><small>求职档案与投递进度</small></span>
+      </a>
+      <span class="secure-label">HTTPS 安全连接</span>
+    </header>
+
+    <main class="auth-main">
+      <section class="auth-intro" aria-labelledby="authTitle">
+        <p class="auth-kicker">手机号登录</p>
+        <h1 id="authTitle">登录投递作战夹</h1>
+        <p>首次使用手机号验证码确认身份并创建密码。之后可直接使用手机号和密码登录。</p>
+        <div class="auth-principles" aria-label="账户安全说明">
+          <div><strong>独立账户</strong><span>不同用户的简历会话相互隔离</span></div>
+          <div><strong>验证码核验</strong><span>验证码由阿里云生成和验证</span></div>
+          <div><strong>安全会话</strong><span>登录凭证不会交给页面脚本读取</span></div>
+        </div>
+      </section>
+
+      <section class="auth-panel" aria-labelledby="panelTitle">
+        <div class="auth-panel-heading">
+          <div><p>账户</p><h2 id="panelTitle">登录或创建账户</h2></div>
+          <span id="stepLabel">手机验证</span>
+        </div>
+
+        <div class="auth-tabs" id="authTabs" role="tablist" aria-label="登录方式">
+          <button id="smsTab" type="button" role="tab" aria-selected="true">验证码登录</button>
+          <button id="passwordTab" type="button" role="tab" aria-selected="false">密码登录</button>
+        </div>
+
+        <form id="smsPhoneForm" class="auth-form" novalidate>
+          <label for="smsPhone">手机号</label>
+          <input id="smsPhone" name="phone" type="tel" inputmode="numeric" autocomplete="tel" maxlength="13" placeholder="请输入中国大陆手机号" required>
+          <p class="field-help">新用户验证成功后需要创建登录密码。</p>
+          <button class="auth-primary" id="sendCodeButton" type="submit">获取验证码</button>
+        </form>
+
+        <form id="smsCodeForm" class="auth-form" hidden novalidate>
+          <div class="verified-phone"><span>验证码已发送至</span><strong id="verifiedPhone"></strong></div>
+          <label for="smsCode">短信验证码</label>
+          <input id="smsCode" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="6 位数字验证码" required>
+          <button class="auth-primary" id="verifyCodeButton" type="submit">验证并继续</button>
+          <div class="form-row-actions">
+            <button class="auth-text" id="changePhoneButton" type="button">更换手机号</button>
+            <button class="auth-text" id="resendCodeButton" type="button" disabled>60 秒后重发</button>
+          </div>
+        </form>
+
+        <form id="passwordLoginForm" class="auth-form" hidden novalidate>
+          <label for="loginPhone">手机号</label>
+          <input id="loginPhone" name="phone" type="tel" inputmode="numeric" autocomplete="username" maxlength="13" placeholder="请输入中国大陆手机号" required>
+          <label for="loginPassword">密码</label>
+          <input id="loginPassword" name="password" type="password" autocomplete="current-password" maxlength="64" placeholder="请输入登录密码" required>
+          <label class="password-visibility"><input id="showLoginPassword" type="checkbox">显示密码</label>
+          <button class="auth-primary" id="passwordLoginButton" type="submit">登录工作台</button>
+          <button class="auth-text forgot-action" id="useSmsButton" type="button">忘记密码，使用验证码登录</button>
+        </form>
+
+        <form id="passwordSetupForm" class="auth-form" hidden novalidate>
+          <div class="setup-notice"><strong>手机号验证成功</strong><span>请创建登录密码，下次可直接登录。</span></div>
+          <input id="setupUsername" name="username" type="hidden" autocomplete="username">
+          <label for="newPassword">创建密码</label>
+          <input id="newPassword" name="password" type="password" autocomplete="new-password" maxlength="64" placeholder="8-64 位，同时包含字母和数字" required>
+          <label for="confirmPassword">确认密码</label>
+          <input id="confirmPassword" name="password_confirmation" type="password" autocomplete="new-password" maxlength="64" placeholder="再次输入密码" required>
+          <label class="password-visibility"><input id="showSetupPassword" type="checkbox">显示密码</label>
+          <button class="auth-primary" id="setupPasswordButton" type="submit">创建密码并进入</button>
+        </form>
+
+        <p class="auth-error" id="authError" role="alert" aria-live="polite" hidden></p>
+      </section>
+    </main>
+  </div>
+  <script src="/auth.js?v=1" defer></script>
+</body>
+</html>

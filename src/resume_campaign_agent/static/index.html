@@ -3,62 +3,68 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Base 优先的中国企业 AI 检索与通用简历海投辅助器">
-  <title>投递作战夹 · 中国企业 AI 搜索</title>
-  <link rel="stylesheet" href="/styles.css?v=7">
+  <meta name="description" content="保存求职档案、分析岗位并跟踪投递进度">
+  <title>投递作战夹 · 求职档案与进度</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/styles.css?v=8">
 </head>
 <body>
   <div class="app-shell">
     <header class="masthead">
       <a class="brand" href="/" aria-label="投递作战夹首页">
         <span class="brand-mark" aria-hidden="true">RC</span>
-        <span><strong>投递作战夹</strong><small>CHINA ENTERPRISE RADAR / AI TAKEOVER</small></span>
+        <span><strong>投递作战夹</strong><small>求职档案与投递进度</small></span>
       </a>
       <div class="system-strip" aria-label="系统状态">
-        <span class="status-dot" id="healthDot"></span><span id="healthText">正在连接 Agent</span>
+        <span class="status-dot" id="healthDot"></span><span id="healthText">正在连接服务</span>
         <span class="strip-rule"></span><span id="modelText">模型待确认</span>
-        <span class="strip-rule"></span><span id="sourceText">Exa AI + 官方入口</span>
+        <span class="strip-rule"></span><span id="sourceText">企业官网与公开招聘入口</span>
       </div>
       <nav class="mast-actions" aria-label="页面操作">
-        <button class="quiet-button" id="portalJumpButton" type="button">查看网申字段</button>
-        <a class="quiet-link" href="/docs" target="_blank" rel="noreferrer">API 文档</a>
+        <span class="account-phone" id="accountPhone" hidden></span>
+        <button class="quiet-button" id="portalJumpButton" type="button">网申字段参考</button>
+        <button class="quiet-button" id="logoutButton" type="button">退出登录</button>
       </nav>
     </header>
 
     <main>
       <section class="briefing" aria-labelledby="briefingTitle">
         <div>
-          <p class="eyebrow">BASE-FIRST ENTERPRISE DISCOVERY</p>
-          <h1 id="briefingTitle">先定 Base，再让 AI 把中国企业搜全。</h1>
-          <p>不限定 AI、不限定专业。用城市、专业方向、行业和企业类型组合检索，再由 AI 选择官方渠道并接管登录、填表与逐岗位投递。</p>
+          <p class="eyebrow">从一份可继续使用的档案开始</p>
+          <h1 id="briefingTitle">先把简历建好，再处理每一个岗位</h1>
+          <p>只需建档一次。以后登录后可以继续补充经历、分析岗位、生成岗位版简历，并在同一个看板里更新投递进度。</p>
         </div>
-        <div class="safety-seal" aria-label="投递状态：逐岗位确认"><span>AI PILOT</span><strong>逐岗位确认后投递</strong></div>
+        <div class="safety-seal" aria-label="投递状态：逐岗位确认"><span>提交规则</span><strong>每个岗位都由你确认</strong></div>
       </section>
 
       <div class="synthetic-notice" role="note">
-        <strong>正式投递模式</strong>
-        <span>请填写并核对本人的真实简历。AI 会搜索企业官网并接管申请流程；验证码和最终提交仍需你针对当前岗位明确确认。</span>
+        <strong>请使用真实信息</strong>
+        <span>系统会保存你的档案和投递进度。验证码、敏感信息和最终提交仍由你本人处理。</span>
       </div>
 
-      <section class="campaign-rail" aria-label="工作轨道">
-        <div class="rail-step is-active"><span>01</span><strong>补齐通用简历</strong><small>跨企业职业事实</small></div><div class="rail-line"></div>
-        <div class="rail-step"><span>02</span><strong>Base 企业搜索</strong><small>AI + 官方来源</small></div><div class="rail-line"></div>
-        <div class="rail-step"><span>03</span><strong>AI 接管官网</strong><small>验证码确认 / 自动填表投递</small></div>
+      <section class="campaign-rail" aria-label="当前流程">
+        <button class="rail-step is-active" id="railResume" data-workflow-target="resumeForm" type="button"><span>01</span><strong>建立求职档案</strong><small id="railResumeStatus">等待保存</small></button><div class="rail-line"></div>
+        <button class="rail-step" id="railJob" data-workflow-target="careerOS" type="button"><span>02</span><strong>处理目标岗位</strong><small id="railJobStatus">填写企业、岗位和 JD</small></button><div class="rail-line"></div>
+        <button class="rail-step" id="railBoard" data-workflow-target="careerApplicationBoard" type="button"><span>03</span><strong>跟踪投递进度</strong><small id="railBoardStatus">还没有投递记录</small></button>
       </section>
 
       <section class="workspace">
         <article class="paper-panel resume-panel" aria-labelledby="resumeTitle">
-          <div class="panel-heading"><div><p class="panel-index">01 / UNIVERSAL RESUME</p><h2 id="resumeTitle">通用候选人档案</h2></div><span class="file-chip">REAL PROFILE</span></div>
+          <div class="panel-heading"><div><p class="panel-index">第 1 步</p><h2 id="resumeTitle">建立求职档案</h2></div><span class="file-chip" id="profileSaveStatus">尚未保存</span></div>
+          <div class="profile-toolbar" aria-live="polite">
+            <p><strong id="profileProgress">先填写标有“必填”的内容</strong><span>保存后，岗位分析、简历版本和投递记录都会使用这份档案。</span></p>
+            <button id="saveProfileTopButton" class="profile-save-button" type="button">保存档案</button>
+          </div>
           <form id="resumeForm" novalidate>
             <fieldset>
               <legend>基本信息与联系方式</legend>
               <div class="field-grid two">
-                <label>姓名<input id="fullName" autocomplete="name" required></label>
+                <label>姓名 <span class="field-hint">（必填）</span><input id="fullName" autocomplete="name" required></label>
                 <label>常用名<input id="preferredName"></label>
-                <label>当前城市<input id="city" autocomplete="address-level2" required></label>
+                <label>当前城市 <span class="field-hint">（必填）</span><input id="city" autocomplete="address-level2" required></label>
                 <label>职业定位<input id="professionalHeadline"></label>
-                <label>邮箱<input id="email" type="email" autocomplete="email" required></label>
-                <label>电话<input id="phone" autocomplete="tel" required></label>
+                <label>邮箱 <span class="field-hint">（必填）</span><input id="email" type="email" autocomplete="email" required></label>
+                <label>电话 <span class="field-hint">（必填）</span><input id="phone" autocomplete="tel" required></label>
                 <label>微信<input id="wechat"></label>
                 <label>求职状态<input id="jobSeekingStatus"></label>
               </div>
@@ -66,11 +72,11 @@
 
             <fieldset>
               <legend>求职意向与 Base</legend>
-              <label>目标岗位 / 专业方向 <span class="field-hint">逗号分隔，不限定技术岗</span><input id="targetRoles" required></label>
+              <label>目标岗位 / 专业方向 <span class="field-hint">（必填，逗号分隔）</span><input id="targetRoles" required></label>
               <div class="field-grid two">
                 <label>目标行业<input id="targetIndustries"></label>
                 <label>企业类型<input id="targetEmployerTypes"></label>
-                <label>意向 Base 城市<input id="baseLocations" required></label>
+                <label>意向 Base 城市 <span class="field-hint">（必填）</span><input id="baseLocations" required></label>
                 <label>希望优先搜索的企业<input id="companyKeywords" placeholder="留空则尽可能广泛搜索"></label>
                 <label>用工类型<input id="employmentTypes"></label>
                 <label>工作年限<input id="yearsExperience" type="number" min="0" max="60" step="0.5"></label>
@@ -78,19 +84,19 @@
                 <label>期望薪资<input id="expectedSalary"></label>
               </div>
               <label>搬迁 / 调剂意愿<input id="relocationPreference"></label>
-              <label>专业技能与工具 <span class="field-hint">逗号分隔</span><input id="skills" required></label>
-              <label>职业摘要<textarea id="summary" rows="4" required></textarea></label>
+              <label>专业技能与工具 <span class="field-hint">（必填，至少 3 项，逗号分隔）</span><input id="skills" required></label>
+              <label>职业摘要 <span class="field-hint">（必填，至少 20 字）</span><textarea id="summary" rows="4" required></textarea></label>
             </fieldset>
 
             <details class="form-section" open>
               <summary>教育经历 <span>学校、院系、时间、成绩与课程</span></summary>
               <div class="details-body">
                 <div class="field-grid two">
-                  <label>学校<input id="school" required></label><label>院系<input id="college"></label>
-                  <label>专业<input id="major" required></label><label>辅修 / 双学位<input id="minor"></label>
-                  <label>学历 / 学位<input id="degree" required></label><label>学习类型<input id="educationType"></label>
+                  <label>学校 <span class="field-hint">（必填）</span><input id="school" required></label><label>院系<input id="college"></label>
+                  <label>专业 <span class="field-hint">（必填）</span><input id="major" required></label><label>辅修 / 双学位<input id="minor"></label>
+                  <label>学历 / 学位 <span class="field-hint">（必填）</span><input id="degree" required></label><label>学习类型<select id="educationType"><option value="">请选择</option><option value="全日制">全日制</option><option value="非全日制">非全日制</option><option value="自考">自考</option><option value="其他">其他</option></select></label>
                   <label>入学日期<input id="educationStartDate" type="date"></label><label>毕业日期<input id="educationEndDate" type="date"></label>
-                  <label>毕业年份<input id="graduationYear" type="number" min="1950" max="2100" required></label><label>学校所在地<input id="educationLocation"></label>
+                  <label>毕业年份 <span class="field-hint">（必填）</span><input id="graduationYear" type="number" min="1950" max="2100" required></label><label>学校所在地<input id="educationLocation"></label>
                   <label>GPA<input id="gpa" type="number" min="0" max="100" step="0.01"></label><label>GPA 满分<input id="gpaScale" type="number" min="0" max="100" step="0.01"></label>
                   <label>排名<input id="rank"></label><label>核心课程<input id="coreCourses"></label>
                 </div>
@@ -99,30 +105,18 @@
             </details>
 
             <details class="form-section">
-              <summary>工作 / 实习经历 <span>职责与可核实成果</span></summary>
+              <summary>工作 / 实习经历 <span>可以添加多段</span></summary>
               <div class="details-body">
-                <div class="field-grid two">
-                  <label>企业 / 机构<input id="company"></label><label>岗位<input id="jobTitle"></label>
-                  <label>经历类型<select id="experienceType"><option value="internship">实习</option><option value="full_time">全职</option><option value="part_time">兼职</option><option value="research">科研</option></select></label>
-                  <label>部门<input id="department"></label><label>所在地<input id="workLocation"></label>
-                  <label>开始日期<input id="startDate" type="date"></label><label>结束日期<input id="endDate" type="date"></label>
-                </div>
-                <label>职责<textarea id="responsibilities" rows="3"></textarea></label>
-                <label>成果摘要<textarea id="highlights" rows="3" placeholder="每行一条，只写可以核实的成果"></textarea></label>
-                <label>离职 / 结束原因<input id="leavingReason"></label>
+                <div id="workEntries" class="repeatable-list"></div>
+                <button id="addWorkButton" class="add-entry-button" type="button">+ 添加一段工作或实习经历</button>
               </div>
             </details>
 
             <details class="form-section">
-              <summary>项目 / 课题经历 <span>任意专业均可填写</span></summary>
+              <summary>项目 / 课题经历 <span>可以添加多段</span></summary>
               <div class="details-body">
-                <div class="field-grid two">
-                  <label>项目名称<input id="projectName"></label><label>承担角色<input id="projectRole"></label>
-                  <label>开始日期<input id="projectStartDate" type="date"></label><label>结束日期<input id="projectEndDate" type="date"></label>
-                </div>
-                <label>项目说明<textarea id="projectDescription" rows="3"></textarea></label>
-                <label>成果 / 产出<textarea id="projectHighlights" rows="2"></textarea></label>
-                <label>相关能力<input id="projectSkills"></label>
+                <div id="projectEntries" class="repeatable-list"></div>
+                <button id="addProjectButton" class="add-entry-button" type="button">+ 添加一段项目或课题经历</button>
               </div>
             </details>
 
@@ -130,12 +124,12 @@
               <summary>校园、证书、语言与荣誉 <span>补充能力证据</span></summary>
               <div class="details-body">
                 <div class="field-grid two">
-                  <label>校园组织<input id="campusOrganization"></label><label>校园职务<input id="campusRole"></label>
-                  <label>校园经历说明<input id="campusDescription"></label><label>证书名称<input id="certificateName"></label>
+                  <label>校园组织 <span class="field-hint">（填写校园经历时必填）</span><input id="campusOrganization"></label><label>校园职务 <span class="field-hint">（填写校园经历时必填）</span><input id="campusRole"></label>
+                  <label>校园经历说明 <span class="field-hint">（填写校园经历时必填）</span><input id="campusDescription"></label><label>证书名称 <span class="field-hint">（填写证书时必填）</span><input id="certificateName"></label>
                   <label>证书颁发方<input id="certificateIssuer"></label><label>证书成绩<input id="certificateScore"></label>
-                  <label>语言<input id="language"></label><label>熟练度<input id="languageProficiency"></label>
+                  <label>语言 <span class="field-hint">（填写语言时必填）</span><input id="language"></label><label>熟练度 <span class="field-hint">（填写语言时必填）</span><input id="languageProficiency"></label>
                   <label>语言考试<input id="languageTest"></label><label>语言成绩<input id="languageScore"></label>
-                  <label>荣誉 / 奖项<input id="awardName"></label><label>兴趣爱好<input id="hobbies"></label>
+                  <label>荣誉 / 奖项 <span class="field-hint">（填写奖项时必填）</span><input id="awardName"></label><label>兴趣爱好<input id="hobbies"></label>
                 </div>
                 <label>自我评价<textarea id="selfEvaluation" rows="3"></textarea></label>
                 <label>补充说明<textarea id="additionalInformation" rows="2"></textarea></label>
@@ -143,33 +137,36 @@
             </details>
           </form>
 
-          <div class="missing-box" aria-live="polite"><div class="missing-title"><span>通用模板校验</span><strong id="missingCount">待运行</strong></div><div id="missingList" class="missing-list"><span class="muted-copy">搜索后显示缺失项</span></div></div>
+          <div class="missing-box" aria-live="polite"><div class="missing-title"><span>档案完整度</span><strong id="missingCount">正在检查</strong></div><div id="missingList" class="missing-list"><span class="muted-copy">缺少的内容会显示在这里</span></div></div>
           <p id="completenessNotice" class="completeness-notice"></p>
-          <button class="primary-action" id="runCampaignButton" type="button"><span>AI 全面搜索中国企业</span><small>BASE FIRST · DISCOVER + TAKEOVER</small></button>
+          <div class="profile-actions">
+            <button class="primary-action" id="saveProfileButton" type="button"><span>保存档案并继续</span><small>下一步：填写目标岗位</small></button>
+            <button class="outline-action" id="runCampaignButton" type="button">搜索适合的企业</button>
+          </div>
         </article>
 
         <article class="route-panel" aria-labelledby="routeTitle">
-          <div class="panel-heading compact"><div><p class="panel-index">02 / BASE COMPASS</p><h2 id="routeTitle">Base 与来源账本</h2></div></div>
+          <div class="panel-heading compact"><div><p class="panel-index">可选</p><h2 id="routeTitle">企业搜索范围</h2></div></div>
           <div class="campaign-metrics" aria-label="本轮数据">
-            <div><strong id="sourceMetric">—</strong><span>检索来源</span></div><div><strong id="officialMetric">—</strong><span>AI 可接管</span></div><div><strong id="enterpriseMetric">—</strong><span>企业线索</span></div>
+            <div><strong id="sourceMetric">—</strong><span>检索来源</span></div><div><strong id="officialMetric">—</strong><span>可用入口</span></div><div><strong id="enterpriseMetric">—</strong><span>企业线索</span></div>
           </div>
-          <div id="destinationList" class="destination-list" aria-live="polite"><div class="empty-state compact-empty"><span class="empty-rule"></span><p>Base 城市与 AI 查询计划会在这里留下证据。</p></div></div>
-          <div class="route-note"><span>接管规则</span><p>AI 只选择已核验的官方招聘站；已截止渠道和第三方转载不会进入自动投递。</p></div>
+          <div id="destinationList" class="destination-list" aria-live="polite"><div class="empty-state compact-empty"><span class="empty-rule"></span><p>搜索城市、关键词和来源会显示在这里。</p></div></div>
+          <div class="route-note"><span>搜索规则</span><p>只优先展示可以核对来源的企业招聘入口；已截止渠道和第三方转载会被排除。</p></div>
         </article>
 
         <article class="review-panel" aria-labelledby="reviewTitle">
-          <div class="panel-heading"><div><p class="panel-index">03 / AI APPLICATION QUEUE</p><h2 id="reviewTitle">AI 投递队列</h2></div><span class="queue-count" id="queueCount">0</span></div>
+          <div class="panel-heading"><div><p class="panel-index">搜索结果</p><h2 id="reviewTitle">企业与招聘入口</h2></div><span class="queue-count" id="queueCount">0</span></div>
           <div class="queue-toolbar"><span id="queueSummary">还没有企业研究线索</span><button class="text-button" id="portalLinkButton" type="button">中国银行字段矩阵 ↓</button></div>
-          <div id="enterpriseList" class="enterprise-list" aria-live="polite"><div class="empty-state"><span class="folder-tab">QUEUE / 00</span><h3>等待企业检索</h3><p>填写 Base 和方向后运行。AI 会选择官网渠道，并在你逐岗位确认后接管登录、填表与投递。</p></div></div>
+          <div id="enterpriseList" class="enterprise-list" aria-live="polite"><div class="empty-state"><span class="folder-tab">尚无结果</span><h3>还没有搜索企业</h3><p>保存档案后，可以按目标岗位和城市查找企业招聘入口。</p></div></div>
         </article>
       </section>
 
       <section class="review-desk" id="resumeReviewDesk" aria-labelledby="resumeReviewTitle">
         <div class="review-desk-heading">
           <div>
-            <p class="panel-index">RESUME EDITORIAL DESK / GENERAL</p>
-            <h2 id="resumeReviewTitle">简历审核与优化台</h2>
-            <p>适用于任意专业。先审核事实完整性与岗位匹配，再生成逐条建议；不会自动覆盖原简历。</p>
+            <p class="panel-index">可选工具</p>
+            <h2 id="resumeReviewTitle">检查和修改简历</h2>
+            <p>先检查信息是否完整，再给出逐条修改建议。任何建议都不会自动覆盖你的原始档案。</p>
           </div>
           <span class="editorial-stamp" id="reviewGrade">待审核</span>
         </div>
@@ -184,10 +181,10 @@
         </div>
         <div class="review-output" aria-live="polite">
           <div class="review-scoreboard" id="reviewScoreboard">
-            <div class="score-sheet-placeholder"><span>REVIEW / 00</span><p>运行审核后，这里会显示六维评分、问题证据和待确认修订。</p></div>
+            <div class="score-sheet-placeholder"><span>等待检查</span><p>检查后，这里会显示完整度、相关性和需要补充的事实。</p></div>
           </div>
           <div class="editorial-ledger" id="editorialLedger">
-            <div class="score-sheet-placeholder"><span>EDIT / 00</span><p>优化建议会保留原文对照，不会写回简历模板。</p></div>
+            <div class="score-sheet-placeholder"><span>等待建议</span><p>修改建议会保留原文对照，不会直接写回档案。</p></div>
           </div>
         </div>
       </section>
@@ -195,34 +192,34 @@
       <section class="career-os" id="careerOS" aria-labelledby="careerOSTitle">
         <div class="career-os-heading">
           <div>
-            <p class="panel-index">CAREER OPERATING SYSTEM / 17 CAPABILITIES</p>
-            <h2 id="careerOSTitle">求职驾驶舱</h2>
-            <p>把一个岗位变成可执行的证据链：理解 JD、生成岗位版本、排序投递价值、预检官网、跟踪进度并准备面试。</p>
+            <p class="panel-index">第 2 步和第 3 步</p>
+            <h2 id="careerOSTitle">处理目标岗位</h2>
+            <p>粘贴一个真实岗位的招聘要求，先看匹配情况，再生成岗位版简历并加入投递看板。</p>
           </div>
           <span class="career-os-stamp" id="careerOSStamp">等待岗位</span>
         </div>
 
         <div class="career-input-sheet">
           <div class="career-job-grid">
-            <label>企业<input id="careerCompany" placeholder="从上方岗位清单选择或填写真实企业"></label>
-            <label>岗位<input id="careerTitle" placeholder="填写真实岗位名称"></label>
-            <label>Base<input id="careerLocation" placeholder="岗位工作城市"></label>
+            <label>企业 <span class="field-hint">（岗位功能必填）</span><input id="careerCompany" placeholder="从上方岗位清单选择或填写真实企业"></label>
+            <label>岗位 <span class="field-hint">（岗位功能必填）</span><input id="careerTitle" placeholder="填写真实岗位名称"></label>
+            <label>工作城市<input id="careerLocation" placeholder="岗位工作城市"></label>
             <label>截止日期<input id="careerDeadline" type="date"></label>
-            <label class="span-two">官网投递 URL<input id="careerUrl" placeholder="https://企业官方招聘域名/岗位路径"></label>
-            <label class="span-two">岗位 JD<textarea id="careerJD" rows="6" maxlength="12000" placeholder="粘贴官网真实岗位职责与任职要求"></textarea></label>
+            <label class="span-two">官网投递 URL <span class="field-hint">（官网预检时必填）</span><input id="careerUrl" placeholder="https://企业官方招聘域名/岗位路径"></label>
+            <label class="span-two">岗位 JD <span class="field-hint">（岗位功能必填，至少 10 字）</span><textarea id="careerJD" rows="6" maxlength="12000" placeholder="粘贴官网真实岗位职责与任职要求"></textarea></label>
           </div>
           <div class="career-command-rail">
-            <button id="buildCareerDossierButton" class="career-primary" type="button"><span>生成岗位作战包</span><small>PARSE · MATCH · RISK · RANK</small></button>
-            <button id="createCareerVersionButton" type="button">生成一岗一简历</button>
+            <button id="buildCareerDossierButton" class="career-primary" type="button"><span>分析这个岗位</span><small>检查要求、匹配和风险</small></button>
+            <button id="createCareerVersionButton" type="button">生成岗位版简历</button>
             <button id="trackCareerApplicationButton" type="button">加入投递看板</button>
             <button id="prepareInterviewButton" type="button">生成面试准备包</button>
           </div>
         </div>
 
         <nav class="career-module-index" aria-label="求职驾驶舱模块">
-          <a href="#careerDossier">01 岗位情报</a><a href="#careerVersionLedger">02 简历版本</a>
-          <a href="#careerPortalDesk">03 官网预检</a><a href="#careerApplicationBoard">04 投递时间线</a>
-          <a href="#careerInterviewDesk">05 面试训练</a><a href="#careerEvidenceDesk">06 证据与保险箱</a>
+          <a href="#careerDossier">01 岗位分析</a><a href="#careerVersionLedger">02 简历版本</a>
+          <a href="#careerPortalDesk">03 官网检查</a><a href="#careerApplicationBoard">04 投递进度</a>
+          <a href="#careerInterviewDesk">05 面试准备</a><a href="#careerEvidenceDesk">06 事实材料</a>
         </nav>
 
         <div class="career-workspace">
@@ -254,8 +251,8 @@
           <article class="career-module" id="careerInterviewDesk">
             <div class="career-module-title"><span>05</span><div><h3>面试准备与一致性训练</h3><p>根据 JD 和岗位简历追问；回答不得超出事实母版</p></div></div>
             <div class="interview-simulator">
-              <label>面试问题<input id="interviewQuestion" placeholder="填写要练习的真实面试问题"></label>
-              <label>你的回答<textarea id="interviewAnswer" rows="4" placeholder="使用背景、目标、行动、结果组织回答"></textarea></label>
+              <label>面试问题 <span class="field-hint">（回答审核时必填）</span><input id="interviewQuestion" placeholder="填写要练习的真实面试问题"></label>
+              <label>你的回答 <span class="field-hint">（回答审核时必填）</span><textarea id="interviewAnswer" rows="4" placeholder="使用背景、目标、行动、结果组织回答"></textarea></label>
               <button id="simulateInterviewButton" type="button">审核这段回答</button>
             </div>
             <div class="career-module-body" id="careerInterviewBody"><div class="career-placeholder">生成面试准备包后显示追问题库。</div></div>
@@ -266,14 +263,14 @@
             <div class="evidence-vault-grid">
               <div class="evidence-entry">
                 <strong>添加证据记录</strong>
-                <label>证据名称<input id="evidenceLabel" placeholder="项目报告、获奖证明或成果记录"></label>
+                <label>证据名称 <span class="field-hint">（保存证据时必填）</span><input id="evidenceLabel" placeholder="项目报告、获奖证明或成果记录"></label>
                 <label>可核实事实<input id="evidenceFacts" placeholder="只填写能够由本人材料证明的事实"></label>
                 <button id="addEvidenceButton" type="button">保存到证据库</button>
               </div>
               <div class="vault-entry">
                 <strong>临时加密保险箱</strong>
                 <label>敏感字段<select id="vaultField"><option value="student_id">学号</option><option value="identity_number">证件号码</option><option value="home_address">家庭地址</option><option value="emergency_phone">紧急联系人电话</option></select></label>
-                <label>字段值<input id="vaultValue" type="password" autocomplete="off" placeholder="仅 HTTPS 或本机允许保存"></label>
+                <label>字段值 <span class="field-hint">（保存时必填）</span><input id="vaultValue" type="password" autocomplete="off" placeholder="仅 HTTPS 或本机允许保存"></label>
                 <button id="saveVaultButton" type="button">加密保存元数据</button>
                 <small>公网 HTTP 环境自动禁用；进程重启后密钥和密文一并失效。</small>
               </div>
@@ -285,7 +282,7 @@
 
       <section class="batch-lab" id="portalMatrix" aria-labelledby="batchTitle">
         <div class="batch-heading">
-          <div><p class="panel-index">PORTAL COVERAGE / BOC REFERENCE</p><h2 id="batchTitle">网申字段覆盖矩阵</h2><p>用中国银行 2026 招聘要求校准通用模板；高敏字段只提示去官方门户准备，不保存其值。</p></div>
+          <div><p class="panel-index">网申参考</p><h2 id="batchTitle">常见网申字段</h2><p>参考中国银行 2026 招聘要求检查档案覆盖情况；高敏信息只提示准备，不保存内容。</p></div>
           <button class="secondary-action" id="portalActionButton" type="button">载入中国银行字段要求</button>
         </div>
         <div id="portalEvidence" class="portal-evidence"></div>
@@ -293,9 +290,10 @@
       </section>
     </main>
 
-    <footer><span>Resume Campaign Agent · Pydantic AI</span><span>Exa AI 搜索 + 中国企业官方目录 · 验证码人工接力 · 逐岗位授权投递</span></footer>
+    <footer><span>投递作战夹</span><span>企业官网与公开招聘入口 · 验证码本人处理 · 每个岗位单独确认</span></footer>
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="/app.js?v=10" defer></script>
+  <script src="/app-utils.js?v=1" defer></script>
+  <script src="/app.js?v=13" defer></script>
 </body>
 </html>

@@ -4,12 +4,20 @@ from .services.resume_exporter import ResumeExporter
 import platform
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Query, status
+from fastapi import FastAPI, HTTPException, Query, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, Field
 
 from .agent import AgentDependencies, build_agent, compact_session_context
+from .auth import (
+    SESSION_COOKIE,
+    SETUP_COOKIE,
+    SETUP_TTL_SECONDS,
+    AuthError,
+    AuthService,
+)
 from .campaign import CampaignService, missing_resume_fields
 from .browser_assistant import BrowserAssistant
 from .career_copilot import CareerCopilotService
@@ -79,9 +87,34 @@ from .models import (
     SessionState,
     public_model_dict,
 )
-from .store import InMemorySessionStore, SessionNotFoundError
+from .store import (
+    InMemorySessionStore,
+    SessionNotFoundError,
+    bind_session_owner,
+    reset_session_owner,
+)
+from .sms import AliyunSmsProvider
 from .portal_templates import get_portal_template, list_portal_templates
 from .resume_review import ResumeReviewService
+
+
+class SmsCodeRequest(BaseModel):
+    phone: str = Field(min_length=5, max_length=32)
+
+
+class SmsCodeVerification(BaseModel):
+    phone: str = Field(min_length=5, max_length=32)
+    code: str = Field(min_length=4, max_length=8)
+
+
+class PasswordSetupRequest(BaseModel):
+    password: str = Field(min_length=1, max_length=128)
+    password_confirmation: str = Field(min_length=1, max_length=128)
+
+
+class PasswordLoginRequest(BaseModel):
+    phone: str = Field(min_length=5, max_length=32)
+    password: str = Field(min_length=1, max_length=128)
 
 
 def create_app(
@@ -89,6 +122,7 @@ def create_app(
     settings: Settings | None = None,
     store: InMemorySessionStore | None = None,
     job_provider=None,
+    auth_service: AuthService | None = None,
 ) -> FastAPI:
     settings = settings or Settings.from_env()
     store = store or InMemorySessionStore()
@@ -99,7 +133,9 @@ def create_app(
     discovery_service = EnterpriseDiscoveryService(settings)
     browser_assistant = BrowserAssistant(settings)
     resume_review_service = ResumeReviewService(settings)
-    career_copilot = CareerCopilotService()
+    career_copilot = CareerCopilotService(data_dir=store.data_dir)
+    if settings.auth_enabled and auth_service is None:
+        auth_service = AuthService(settings, AliyunSmsProvider(settings))
 
     app = FastAPI(
         title="Resume Campaign Agent",
@@ -114,6 +150,7 @@ def create_app(
     app.state.resume_review_service = resume_review_service
     app.state.career_copilot = career_copilot
     app.state.agent = None
+    app.state.auth_service = auth_service
     app.add_middleware(
         CORSMiddleware,
         allow_origin_regex=(
@@ -125,11 +162,181 @@ def create_app(
         allow_headers=["Content-Type"],
     )
 
+    @app.exception_handler(AuthError)
+    async def auth_error_handler(_, exc: AuthError):
+        headers = (
+            {"Retry-After": str(exc.retry_after_seconds)}
+            if exc.retry_after_seconds is not None
+            else None
+        )
+        return JSONResponse(
+            status_code=exc.status_code,
+            headers=headers,
+            content={
+                "error": {
+                    "code": exc.code,
+                    "message": exc.message,
+                    "retryable": exc.status_code in {429, 503},
+                    **(
+                        {"retryAfterSeconds": exc.retry_after_seconds}
+                        if exc.retry_after_seconds is not None
+                        else {}
+                    ),
+                }
+            },
+        )
+
+    @app.middleware("http")
+    async def require_application_login(request: Request, call_next):
+        if not settings.auth_enabled or auth_service is None:
+            return await call_next(request)
+
+        path = request.url.path
+        public_paths = {
+            "/login",
+            "/auth.css",
+            "/auth.js",
+            "/api/health",
+            "/favicon.ico",
+        }
+        if path in public_paths or path.startswith("/api/auth/") or request.method == "OPTIONS":
+            if path == "/login":
+                try:
+                    auth_service.authenticate_session(request.cookies.get(SESSION_COOKIE))
+                except AuthError:
+                    pass
+                else:
+                    return RedirectResponse("/", status_code=303)
+            return await call_next(request)
+
+        try:
+            user = auth_service.authenticate_session(request.cookies.get(SESSION_COOKIE))
+        except AuthError as exc:
+            if path.startswith("/api/") or path in {"/docs", "/redoc", "/openapi.json"}:
+                return JSONResponse(
+                    status_code=401,
+                    content={
+                        "error": {
+                            "code": exc.code,
+                            "message": exc.message,
+                            "retryable": False,
+                        }
+                    },
+                )
+            return RedirectResponse("/login", status_code=303)
+
+        request.state.auth_user = user
+        owner_token = bind_session_owner(user.user_id)
+        try:
+            return await call_next(request)
+        finally:
+            reset_session_owner(owner_token)
+
+    if auth_service is not None:
+        async def close_auth_database() -> None:
+            auth_service.close()
+
+        app.router.add_event_handler("shutdown", close_auth_database)
+
     @app.exception_handler(SessionNotFoundError)
     async def session_not_found_handler(_, exc: SessionNotFoundError):
         from fastapi.responses import JSONResponse
 
         return JSONResponse(status_code=404, content={"detail": f"session not found: {exc.args[0]}"})
+
+    def require_auth_service() -> AuthService:
+        if not settings.auth_enabled or auth_service is None:
+            raise HTTPException(status_code=404, detail="authentication is disabled")
+        return auth_service
+
+    def request_client_ip(request: Request) -> str:
+        real_ip = request.headers.get("x-real-ip")
+        return real_ip or (request.client.host if request.client else "unknown")
+
+    def set_session_cookie(response: Response, token: str) -> None:
+        response.set_cookie(
+            SESSION_COOKIE,
+            token,
+            max_age=settings.auth_session_days * 86_400,
+            secure=settings.auth_cookie_secure,
+            httponly=True,
+            samesite="lax",
+            path="/",
+        )
+
+    @app.get("/api/auth/status")
+    async def authentication_status():
+        return {"enabled": settings.auth_enabled and auth_service is not None}
+
+    @app.post("/api/auth/sms/request")
+    async def request_login_sms(payload: SmsCodeRequest, request: Request):
+        service = require_auth_service()
+        return await service.request_sms_code(payload.phone, request_client_ip(request))
+
+    @app.post("/api/auth/sms/verify")
+    async def verify_login_sms(
+        payload: SmsCodeVerification, request: Request, response: Response
+    ):
+        service = require_auth_service()
+        result = await service.verify_sms_code(
+            payload.phone, payload.code, request_client_ip(request)
+        )
+        if result.status == "authenticated" and result.session_token:
+            set_session_cookie(response, result.session_token)
+            response.delete_cookie(SETUP_COOKIE, path="/")
+        elif result.setup_token:
+            response.set_cookie(
+                SETUP_COOKIE,
+                result.setup_token,
+                max_age=SETUP_TTL_SECONDS,
+                secure=settings.auth_cookie_secure,
+                httponly=True,
+                samesite="strict",
+                path="/",
+            )
+        return {"status": result.status, "phoneLast4": result.phone_last4}
+
+    @app.post("/api/auth/password/setup", status_code=201)
+    async def create_login_password(
+        payload: PasswordSetupRequest, request: Request, response: Response
+    ):
+        service = require_auth_service()
+        setup_token = request.cookies.get(SETUP_COOKIE)
+        if not setup_token:
+            raise AuthError(401, "PASSWORD_SETUP_EXPIRED", "设密凭证已过期，请重新验证手机号")
+        user, session_token = service.setup_password(
+            setup_token, payload.password, payload.password_confirmation
+        )
+        set_session_cookie(response, session_token)
+        response.delete_cookie(SETUP_COOKIE, path="/")
+        return {"userId": user.user_id, "phoneLast4": user.phone_last4}
+
+    @app.post("/api/auth/password/login")
+    async def login_with_password(
+        payload: PasswordLoginRequest, request: Request, response: Response
+    ):
+        service = require_auth_service()
+        user, session_token = service.password_login(
+            payload.phone, payload.password, request_client_ip(request)
+        )
+        set_session_cookie(response, session_token)
+        response.delete_cookie(SETUP_COOKIE, path="/")
+        return {"userId": user.user_id, "phoneLast4": user.phone_last4}
+
+    @app.get("/api/auth/me")
+    async def current_auth_user(request: Request):
+        service = require_auth_service()
+        user = service.authenticate_session(request.cookies.get(SESSION_COOKIE))
+        return {"userId": user.user_id, "phoneLast4": user.phone_last4}
+
+    @app.post("/api/auth/logout", status_code=204)
+    async def logout_auth_user(request: Request, response: Response) -> Response:
+        service = require_auth_service()
+        service.logout(request.cookies.get(SESSION_COOKIE))
+        response.delete_cookie(SESSION_COOKIE, path="/")
+        response.delete_cookie(SETUP_COOKIE, path="/")
+        response.status_code = 204
+        return response
 
     # ─── 简历导出接口 ───────────────────────────────────────────
     @app.post("/api/export/resume/word")
@@ -200,6 +407,10 @@ def create_app(
     @app.post("/api/sessions", response_model=SessionState, status_code=201)
     async def create_session(request: CreateSessionRequest) -> SessionState:
         return await store.create(request)
+
+    @app.get("/api/sessions", response_model=list[SessionState])
+    async def list_sessions() -> list[SessionState]:
+        return await store.list()
 
     @app.get("/api/sessions/{session_id}", response_model=SessionState)
     async def get_session(session_id: str) -> SessionState:
@@ -561,6 +772,10 @@ def create_app(
         )
 
     static_dir = Path(__file__).resolve().parent / "static"
+
+    @app.get("/login", include_in_schema=False)
+    async def login_page() -> FileResponse:
+        return FileResponse(static_dir / "login.html", media_type="text/html")
 
     if settings.enable_test_fixtures:
         @app.get("/browser-test", include_in_schema=False)

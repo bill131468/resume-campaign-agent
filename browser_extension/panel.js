@@ -381,6 +381,7 @@ async function grantCurrentSite() {
   setBusy(button, true, '等待浏览器确认…');
   try {
     if (!currentSitePermission?.origin) throw new Error('当前页面不可授权');
+    // permissions.request must be invoked synchronously from the user click handler.
     const permissionRequest = ResumeCopilotPermissions.request(chrome, currentSitePermission.origin);
     const { granted } = await permissionRequest;
     if (!granted) throw new Error('浏览器未授予当前站点权限');
